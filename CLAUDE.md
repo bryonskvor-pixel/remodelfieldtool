@@ -39,14 +39,17 @@
 
 ## Current phase
 
-**Phase 0 complete (2026-07-11).** Open questions §14.4–14.6 resolved (see
-PROJECT_CONTEXT.md §14): shared Turso DB with `contractor_id` everywhere,
-intake form stays on the contractor's site POSTing to our API, local code
-defaults live in `contractors.local_code_defaults`. Auth is email magic link
-(console delivery for pilot). Repo layout: `app/` (React PWA, Vite),
-`server/` (Hono API, port 8787), `db/migrations/`, `templates/` (seed JSON
-for all six project types + universal block). Turso credentials live in
-root `.env` (gitignored) — never commit them. Next: Phase 1 (field capture).
+**Phase 1 capture slice done (2026-07-11); Phase 1 continues.** The offline
+walkthrough capture flow works end-to-end (verified in-browser with network
+off: capture → reload → nothing lost → syncs on reconnect). App-side offline
+store is IndexedDB (embedded replicas are server-side only — see §3
+clarification in PROJECT_CONTEXT.md); dirty rows push to `POST /api/sync`,
+which enforces Hard Rule 7 (contractor_id from session, ownership-guarded
+upserts). Completeness engine v1 lives in `app/src/walkthrough/` with vitest
+tests (`npm test`). Repo layout: `app/` (React PWA, Vite), `server/` (Hono
+API, port 8787), `db/migrations/`, `templates/` (seed JSON). Turso
+credentials live in root `.env` (gitignored) — never commit them.
+Next: R2 photo/audio upload + Groq transcription queue, then Phase 2.
 
 ## Out of scope (v1 — see §12)
 

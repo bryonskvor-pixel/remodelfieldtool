@@ -1,5 +1,63 @@
 # Session Notes — ScopeWalk (remodelfieldtool)
 
+## 2026-07-11 (session 3) — Phase 1 capture slice: offline walkthrough flow
+
+**Accomplished**
+- Full offline walkthrough capture flow, milestone verified: an automated
+  Edge/Playwright run captured a fake kitchen walkthrough with the network
+  off (measurement via numeric pad, choice chips, one-tap skip, typed note),
+  reloaded the page still offline with nothing lost, and drained the sync
+  queue on reconnect ("Offline · 7 queued" → "Synced").
+- App offline layer (`app/src/db/`): minimal IndexedDB wrapper, entity store
+  mirroring the server schema + `_dirty` flags, blob store for photo/audio,
+  sync engine (push on start/online-event/debounced-after-write). Decision
+  documented in PROJECT_CONTEXT §3: Turso embedded replicas are server-side
+  only; the browser store is IndexedDB.
+- Walkthrough engine + completeness engine v1 (`app/src/walkthrough/`),
+  pure modules with 18 vitest tests (`npm test`): required/conditional/
+  skipped scoring, lt/in/project_type/answer conditions, conditional photos
+  ("vented hood → exterior wall photo"), skip → drafted assumption text.
+- UI: Home (start walkthrough creates project + walkthrough + universal area
+  + primary area, all local), prompt screens (big prompt, [Photo] [Voice]
+  [Note] [Measurement], choice chips, skip sheet with the three one-tap
+  reasons), measurement pad with unit presets + L×W→SF live, voice via
+  MediaRecorder (3-min cap), photo via camera input + canvas compression
+  (≤400KB target), per-area loop with add-area (any project type, §6.6),
+  review screen (flags on top, score X of Y, complete-anyway never blocks),
+  live progress bar, sync badge, hash routing (offline-reload safe).
+- Server: migration 0002 (scope_items.answer + updated_at everywhere),
+  `GET /api/bootstrap` (contractor/templates/projects cache pull),
+  `POST /api/sync` batch upsert — contractor_id from session only, tenant-
+  guarded ON CONFLICT, parent-ownership validation (smoke-tested: bogus
+  area_id rejected, LWW verified).
+- Auth is offline-tolerant now: only explicit 401 signs out; network failure
+  falls back to the cached contractor.
+
+**State**
+- Phase 1 partially done. Photos/voice notes save as local IndexedDB blobs
+  and their metadata rows sync; the media bytes do NOT upload yet.
+- Dev helpers kept: `server/scripts/smoke-sync.ts` (endpoint smoke, cleans up
+  after itself) and `server/scripts/mint-session.ts` (prints a 1-hour session
+  cookie token for local testing).
+- Not verified by Bryon on a real phone yet — that's the true milestone.
+
+**Next steps**
+- R2 upload for photo/audio blobs + Groq Whisper transcription queue on sync.
+- Bryon: run a fake kitchen walkthrough on your actual phone with wifi off
+  (`npm run dev:server` + `npm run dev:app`, open on phone via LAN IP —
+  note: camera/mic need HTTPS or localhost, so test media capture via
+  desktop or set up HTTPS dev; capture/skip/measure work regardless).
+- Write capture-driven area dims into `areas.length_ft/width_ft/floor_sf`.
+- Still open from last session: Ohio local-code defaults from Bradford;
+  rotate Turso token eventually.
+
+**Context**
+- The runner resumes at the first untouched prompt on load; position is
+  anchored by step key, not index, because conditional prompts appear
+  mid-flow as answers land (e.g. year built 1962 → lead-paint prompt).
+- Vite preview now proxies /api (added for the milestone test).
+- `.env.example` checked this session: clean, no pasted secrets.
+
 ## 2026-07-11 (session 2) — Phase 0 complete
 
 **Accomplished**

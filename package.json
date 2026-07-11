@@ -14,6 +14,7 @@
     "migrate": "npm run migrate --workspace=server",
     "seed": "npm run seed --workspace=server",
     "build": "npm run build --workspace=app && npm run build --workspace=server",
-    "typecheck": "npm run typecheck --workspace=server && npm run typecheck --workspace=app"
+    "typecheck": "npm run typecheck --workspace=server && npm run typecheck --workspace=app",
+    "test": "npm run test --workspace=app"
   }
 }

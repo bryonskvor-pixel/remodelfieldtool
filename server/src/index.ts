@@ -5,6 +5,7 @@ import { logger } from "hono/logger";
 import { getDb } from "./db.js";
 import { migrate } from "./migrate.js";
 import { requestMagicLink, requireSession, verifyMagicLink } from "./auth.js";
+import { applySyncBatch, type SyncBatch } from "./sync.js";
 
 type Env = { Variables: { contractorId: string } };
 
@@ -107,6 +108,62 @@ app.get("/api/templates", requireSession, async (c) => {
     if (!byType.has(String(row.project_type))) byType.set(String(row.project_type), row);
   }
   return c.json({ templates: [...byType.values()] });
+});
+
+// ---- Phase 1: bootstrap + offline sync --------------------------------------
+
+// Everything the PWA needs cached locally to run a walkthrough offline:
+// contractor profile, templates, and recent projects/walkthroughs.
+app.get("/api/bootstrap", requireSession, async (c) => {
+  const contractorId = c.get("contractorId");
+  const db = getDb();
+  // Hard Rule 7: every query below filters by contractor_id.
+  const contractor = await db.execute({
+    sql: `SELECT id, business_name, owner_name, email, default_markup_pct,
+                 proposal_expiration_days
+          FROM contractors WHERE id = ?`,
+    args: [contractorId],
+  });
+  const templates = await db.execute({
+    sql: `SELECT id, contractor_id, project_type, checklist_json FROM templates
+          WHERE contractor_id = ? OR contractor_id IS NULL
+          ORDER BY project_type, contractor_id IS NULL`,
+    args: [contractorId],
+  });
+  const byType = new Map<string, (typeof templates.rows)[number]>();
+  for (const row of templates.rows) {
+    if (!byType.has(String(row.project_type))) byType.set(String(row.project_type), row);
+  }
+  const projects = await db.execute({
+    sql: `SELECT * FROM projects WHERE contractor_id = ?
+          ORDER BY created_at DESC LIMIT 50`,
+    args: [contractorId],
+  });
+  const walkthroughs = await db.execute({
+    sql: `SELECT * FROM walkthroughs WHERE contractor_id = ?
+          ORDER BY created_at DESC LIMIT 50`,
+    args: [contractorId],
+  });
+  const leads = await db.execute({
+    sql: `SELECT * FROM leads WHERE contractor_id = ? ORDER BY created_at DESC LIMIT 50`,
+    args: [contractorId],
+  });
+  return c.json({
+    contractor: contractor.rows[0],
+    templates: [...byType.values()],
+    projects: projects.rows,
+    walkthroughs: walkthroughs.rows,
+    leads: leads.rows,
+  });
+});
+
+// Batch upsert from the app's offline store. contractor_id comes from the
+// session inside applySyncBatch, never from the payload (Hard Rule 7).
+app.post("/api/sync", requireSession, async (c) => {
+  const batch = await c.req.json<SyncBatch>().catch(() => null);
+  if (!batch || typeof batch !== "object") return c.json({ error: "invalid batch" }, 400);
+  const result = await applySyncBatch(batch, c.get("contractorId"));
+  return c.json(result);
 });
 
 // ---- Boot -------------------------------------------------------------------

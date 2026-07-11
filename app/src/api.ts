@@ -1,11 +1,4 @@
-export interface Contractor {
-  id: string;
-  business_name: string;
-  owner_name: string | null;
-  email: string;
-  default_markup_pct: number;
-  proposal_expiration_days: number;
-}
+import type { Contractor } from "./types";
 
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {

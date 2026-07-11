@@ -54,9 +54,11 @@ Trade-off accepted knowingly: Turso doesn't have Postgres-style row-level securi
 
 **Files:** Cloudflare R2 for photos and audio (no egress fees; photos get re-viewed constantly during pricing). Client-side image compression before upload (target ≤ 400KB per photo at capture, original optionally retained).
 
-**Frontend:** React PWA (installable to home screen, service worker). Mobile-first, one-thumb usable, works in portrait. Local SQLite (via Turso embedded replica) *is* the app's local store — no separate IndexedDB layer needed.
+**Frontend:** React PWA (installable to home screen, service worker). Mobile-first, one-thumb usable, works in portrait.
 
-**Sync:** handled by Turso's embedded-replica sync, last-write-wins per field with a conflict log. Solo contractor pilot means conflicts are rare; log them, don't build a merge UI yet. Revisit if/when a crew role is added (§2).
+**Offline store (clarified at Phase 1 build, 2026-07-11):** Turso embedded replicas are a Node-side construct — the *server* runs one; they don't run inside a browser PWA. The phone-side offline store is **IndexedDB**: entity rows shaped 1:1 like the server schema plus a `_dirty` flag, and photo/audio blobs (which needed IndexedDB regardless). Every capture writes locally first and works with zero connectivity; the service worker precaches the app shell so reloads work offline too. Auth is offline-tolerant: only an explicit 401 signs the device out; a network failure falls back to the cached contractor.
+
+**Sync:** the app pushes whole dirty rows to `POST /api/sync` (batch upsert) on start, on the `online` event, and debounced after writes. Last-write-wins per row via `updated_at`. The endpoint is a Hard Rule 7 enforcement point: `contractor_id` always comes from the session (never the payload), upserts refuse to touch rows owned by another contractor, and parent references (project/walkthrough/area/scope item) are ownership-verified before children are applied — cross-tenant parent ids are rejected. Conflicts are rare for a solo contractor; log them, don't build a merge UI yet. Revisit if/when a crew role is added (§2).
 
 **Transcription: Groq Whisper API (whisper-large-v3-turbo) — LOCKED.** Chosen over OpenAI Whisper (fallback, same request shape, one-line swap if needed) and ruled out consumer tools like Turboscribe (no programmatic API, session-capped, built for manual human upload, not for a backend service transcribing every contractor's every voice note unattended). Runs as a **queued background job on sync**, never blocking capture — contractor records, moves on immediately, transcript fills in within seconds once synced. Editable after.
 
@@ -363,6 +365,8 @@ Repo, PWA scaffold, chosen backend provisioned, auth, schema migration for §4.2
 
 **Phase 1 — Capture (the field tool)**
 Universal block + kitchen + bath templates end-to-end, areas, photos (R2 + compression), voice (record/queue/transcribe), measurements, offline store + sync queue, completeness engine v1. **Milestone: brother runs a real kitchen walkthrough on his phone with airplane mode on, and nothing is lost.**
+
+*Status 2026-07-11: capture slice built and verified.* Walkthrough flow (universal → project-type blocks → per-area loops with add-area), prompt screens with [Photo] [Voice] [Note] [Measurement] + one-tap skip reasons, numeric pad with L×W→SF, IndexedDB offline store + `/api/sync` push, completeness engine v1 (18 unit tests) with live progress bar and review screen. Milestone verified in an automated browser run: full kitchen capture with network off survived a reload and synced cleanly on reconnect. Photos/voice save as local blobs; **remaining for Phase 1:** R2 upload, Groq transcription queue, capture-driven `areas.length_ft/width_ft/floor_sf`, photo annotation, GPS-at-start.
 
 **Phase 2 — Bid & Proposal**
 Bid sheet generation from scope items, price book with auto-suggest, allowances/alternates/GC auto-seed, margin display, proposal builder (narrative AI-draft + edit), tokenized link + PDF + signature + view tracking. **Milestone: one real bid sent to one real customer.**
