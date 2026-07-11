@@ -47,6 +47,19 @@
   `list-projects.ts` (all under server/scripts/).
 
 **Next steps**
+- **Room-shape sketch (requested by Bryon 2026-07-11): third mode on the
+  measurement pad — `Qty | L×W | Sketch`.** Tap-to-place corners on a grid
+  (NOT freehand — gloves), walls snap to horizontal/vertical, tap first
+  corner to close. Then each wall highlights in turn and the existing
+  numeric pad enters its length; shape redraws to scale. Auto-derivable
+  closing segments are SUGGESTED for confirmation, never silently written
+  (Hard Rule 1). Computes floor SF (shoelace) + wall LF, writes
+  `areas.floor_sf` (and `wall_sf` once ceiling height known), overridable.
+  Polygon stores as measurement JSON on the scope item (`dims` grows a
+  `points` array) — syncs through the existing pipeline, no schema change,
+  fully offline. Render a small floor-plan thumbnail on the review screen.
+  Keep L×W the default fast path; sketch is the escape hatch for
+  non-rectangular rooms. ~1 session, no new deps, unit tests for the math.
 - Bryon: real-phone offline run (the true Phase 1 milestone).
 - Photo annotation + GPS-at-start, or explicitly defer them to Phase 3.
 - Then Phase 2: bid sheet generation + price book + proposal.
