@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { BlobThumb } from "../components/BlobThumb";
+import { FloorPlanThumb } from "../components/FloorPlanThumb";
 import { NoteLine } from "../components/NoteLine";
 import { useWalkthroughData } from "./WalkthroughRunner";
 import { db, now } from "../db/store";
@@ -105,6 +106,10 @@ export function Review({
                         </span>
                       )}
                     </p>
+                    {!c.scopeItem?.skipped &&
+                      m.filter((x) => x.dims?.points).map((x, i) => (
+                        <FloorPlanThumb key={i} points={x.dims!.points!} />
+                      ))}
                     {!c.scopeItem?.skipped && itemPhotos.length > 0 && (
                       <div className="thumb-row">
                         {itemPhotos.map((p) => <BlobThumb key={p.id} id={p.id} />)}

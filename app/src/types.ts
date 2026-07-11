@@ -57,7 +57,9 @@ export interface Area {
 export interface Measurement {
   qty: number | null;
   unit: string;
-  dims?: { length?: number; width?: number };
+  /** L×W entry uses length/width; sketch mode stores the room polygon as
+   * corner points in feet (rectilinear, from the sketch pad). */
+  dims?: { length?: number; width?: number; points?: { x: number; y: number }[] };
   label?: string;
 }
 

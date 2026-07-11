@@ -1,8 +1,11 @@
 import { useState } from "react";
+import { SketchPad } from "./SketchPad";
 import type { Measurement } from "../types";
 
-// Numeric pad with unit presets (§11). Two modes: single quantity, or L×W
-// which computes SF live. Big keys — gloves on, one thumb (Hard Rule 3).
+// Numeric pad with unit presets (§11). Three modes: single quantity, L×W
+// (computes SF live — the default fast path), and Sketch (tap-to-place room
+// outline for non-rectangular rooms — the escape hatch). Big keys — gloves
+// on, one thumb (Hard Rule 3).
 
 const UNITS = ["ea", "lf", "sf", "ft", "in", "year"];
 const KEYS = ["7", "8", "9", "4", "5", "6", "1", "2", "3", ".", "0", "⌫"];
@@ -15,7 +18,7 @@ interface Props {
 
 export function MeasurementPad({ defaultUnit, onSave, onClose }: Props) {
   const [unit, setUnit] = useState(defaultUnit ?? "ea");
-  const [mode, setMode] = useState<"qty" | "lxw">(defaultUnit === "sf" ? "lxw" : "qty");
+  const [mode, setMode] = useState<"qty" | "lxw" | "sketch">(defaultUnit === "sf" ? "lxw" : "qty");
   const [fields, setFields] = useState<{ qty: string; length: string; width: string }>({
     qty: "", length: "", width: "",
   });
@@ -60,9 +63,20 @@ export function MeasurementPad({ defaultUnit, onSave, onClose }: Props) {
           <button className={`chip ${mode === "lxw" ? "chip-on" : ""}`} onClick={() => { setMode("lxw"); setActive("length"); }}>
             L × W
           </button>
+          <button className={`chip ${mode === "sketch" ? "chip-on" : ""}`} onClick={() => setMode("sketch")}>
+            Sketch
+          </button>
         </div>
 
-        {mode === "qty" ? (
+        {mode === "sketch" ? (
+          <SketchPad
+            onSave={(m) => {
+              onSave(m);
+              onClose();
+            }}
+            onCancel={onClose}
+          />
+        ) : mode === "qty" ? (
           <>
             <div className="measure-display">
               <span className="measure-value">{fields.qty || "0"}</span>
@@ -97,18 +111,22 @@ export function MeasurementPad({ defaultUnit, onSave, onClose }: Props) {
           </>
         )}
 
-        <div className="keypad">
-          {KEYS.map((k) => (
-            <button key={k} className="key" onClick={() => press(k)}>
-              {k}
-            </button>
-          ))}
-        </div>
+        {mode !== "sketch" && (
+          <>
+            <div className="keypad">
+              {KEYS.map((k) => (
+                <button key={k} className="key" onClick={() => press(k)}>
+                  {k}
+                </button>
+              ))}
+            </div>
 
-        <div className="row">
-          <button className="secondary" onClick={onClose}>Cancel</button>
-          <button onClick={save} disabled={mode === "lxw" ? !sfLive : fields.qty === ""}>Save</button>
-        </div>
+            <div className="row">
+              <button className="secondary" onClick={onClose}>Cancel</button>
+              <button onClick={save} disabled={mode === "lxw" ? !sfLive : fields.qty === ""}>Save</button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

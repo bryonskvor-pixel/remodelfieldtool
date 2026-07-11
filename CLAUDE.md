@@ -56,6 +56,11 @@ rows push to `POST /api/sync`. Completeness engine v1 lives in
 (React PWA, Vite), `server/` (Hono API, port 8787), `db/migrations/`,
 `templates/` (seed JSON). Turso/Groq/R2 credentials live in root `.env`
 (gitignored) — never commit them.
+Room-shape sketch mode (2026-07-11): third measurement-pad mode
+(`Qty | L×W | Sketch`) — tap-to-place corners, H/V snap, per-wall lengths
+with confirmed closure suggestions (Hard Rule 1), floor SF/wall LF,
+`areas.floor_sf` write-through; geometry in `app/src/walkthrough/sketch.ts`
+(unit-tested). Verified in an automated browser run.
 Remaining for Phase 1: photo annotation, GPS-at-start, Bryon's real-phone
 run; then Phase 2 (bid sheet + proposal).
 

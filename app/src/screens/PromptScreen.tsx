@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BlobThumb } from "../components/BlobThumb";
+import { FloorPlanThumb } from "../components/FloorPlanThumb";
 import { NoteLine } from "../components/NoteLine";
 import { MeasurementPad } from "../components/MeasurementPad";
 import { PhotoCapture } from "../components/PhotoCapture";
@@ -118,7 +119,12 @@ export function PromptScreen({
           )}
           {measurements.map((m, i) => (
             <p key={i} className="captured-line">
-              📏 {m.dims ? `${m.dims.length} × ${m.dims.width} ft = ` : ""}{m.qty} {m.unit}
+              {m.dims?.points ? (
+                <FloorPlanThumb points={m.dims.points} size={40} />
+              ) : (
+                "📏 "
+              )}
+              {m.dims?.length && m.dims?.width ? `${m.dims.length} × ${m.dims.width} ft = ` : ""}{m.qty} {m.unit}
               <button className="inline-x" onClick={() => scopeItem && void removeMeasurement(scopeItem, i)}>✕</button>
             </p>
           ))}

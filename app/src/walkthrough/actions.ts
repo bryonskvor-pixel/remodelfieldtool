@@ -4,6 +4,7 @@
 
 import { db, newId, now, putBlob } from "../db/store";
 import { humanizeKey, parsedAnswer, parsedMeasurements, type Step } from "./engine";
+import { perimeterLF } from "./sketch";
 import type { Measurement, Note, Photo, ScopeItem } from "../types";
 
 /** Find-or-create the scope item backing a template prompt in an area. */
@@ -63,6 +64,21 @@ export async function addMeasurement(step: Step, existing: ScopeItem | null, m: 
         length_ft: m.dims.length,
         width_ft: m.dims.width,
         floor_sf: m.qty,
+      });
+    }
+  } else if (keyTail.includes("dims") && m.dims?.points && m.dims.points.length >= 4) {
+    // Sketch on a dims prompt: floor SF came from the confirmed wall lengths
+    // (shoelace over the polygon — still the contractor's numbers, Hard Rule
+    // 1). wall_sf only once ceiling height is known; length/width stay null —
+    // the room isn't a rectangle, that's why it was sketched.
+    const area = await db.areas.get(step.areaId);
+    if (area) {
+      await db.areas.put({
+        ...area,
+        floor_sf: m.qty,
+        wall_sf: area.ceiling_height_ft
+          ? Math.round(perimeterLF(m.dims.points) * area.ceiling_height_ft * 100) / 100
+          : area.wall_sf,
       });
     }
   }

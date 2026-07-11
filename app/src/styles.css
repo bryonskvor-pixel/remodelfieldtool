@@ -337,6 +337,61 @@ button.key {
   margin: 0;
 }
 
+/* Room-shape sketch mode (§11) */
+
+.sketch-hint {
+  min-height: 2.6em;
+  margin: 4px 0;
+}
+
+.sketch-canvas {
+  width: 100%;
+  aspect-ratio: 15 / 11;
+  background: var(--bg);
+  border: 1px solid #2c333c;
+  border-radius: 12px;
+  touch-action: none; /* taps place corners; don't scroll the sheet */
+}
+
+.sketch-dot {
+  fill: #2c333c;
+}
+
+.sketch-wall {
+  stroke: var(--text-dim);
+  stroke-width: 0.12;
+}
+
+.sketch-wall-on {
+  stroke: var(--accent);
+  stroke-width: 0.2;
+}
+
+.sketch-corner {
+  fill: var(--text);
+}
+
+.sketch-corner-start {
+  fill: var(--accent);
+}
+
+.sketch-len {
+  fill: var(--accent);
+  font-size: 0.7px;
+  text-anchor: middle;
+}
+
+.floorplan-thumb {
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+.floorplan-thumb polygon {
+  fill: rgba(245, 166, 35, 0.15);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
 /* Runner chrome */
 
 .runner-header {
