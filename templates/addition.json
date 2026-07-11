@@ -1,0 +1,176 @@
+{
+  "project_type": "addition",
+  "version": 1,
+  "name": "Addition",
+  "description": "PROJECT_CONTEXT.md §6.5. Universal block runs first.",
+  "blocks": [
+    {
+      "key": "addition_main",
+      "title": "Addition",
+      "items": [
+        {
+          "key": "addition.program",
+          "division": "general_conditions",
+          "prompt": "Purpose/rooms, footprint dims, one or two story, over crawl/slab/full basement?",
+          "capture": ["choice", "measurement", "photo", "note"],
+          "choices": ["crawl", "slab", "full_basement"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": []
+        },
+        {
+          "key": "addition.zoning",
+          "division": "general_conditions",
+          "prompt": "ZONING GATE FIRST: setbacks, lot coverage, height. Survey on file? If not — \"survey by others\" assumption/line item",
+          "capture": ["choice", "measurement", "note"],
+          "choices": ["survey_on_file", "no_survey"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["zoning_gate"],
+          "bid_mapping": [
+            { "division": "exclusions", "description": "Property survey by others", "unit": "lump", "when": { "answer": "no_survey" } }
+          ],
+          "proposal_assumption": "Setbacks/lot coverage verified against available records; survey by others if required by jurisdiction."
+        },
+        {
+          "key": "addition.drawings",
+          "division": "general_conditions",
+          "prompt": "Drawings: architect/engineer required? (almost always) Who carries that cost, lead time?",
+          "capture": ["choice", "note"],
+          "choices": ["contractor_carries", "owner_carries", "tbd"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["design_lead_time"],
+          "bid_mapping": [
+            { "division": "general_conditions", "description": "Architectural/engineering drawings", "unit": "lump", "when": { "answer": "contractor_carries" } },
+            { "division": "exclusions", "description": "Architectural/engineering drawings by owner", "unit": "lump", "when": { "answer": "owner_carries" } }
+          ]
+        },
+        {
+          "key": "addition.foundation",
+          "division": "sitework_concrete",
+          "prompt": "Foundation type, soil unknowns — allowance language",
+          "capture": ["choice", "note"],
+          "choices": ["poured", "block", "pier", "slab"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["soil_unknowns"],
+          "bid_mapping": [
+            { "division": "sitework_concrete", "description": "Foundation & excavation", "unit": "lump" },
+            { "division": "allowances", "description": "Soil conditions allowance (rock/water/poor bearing)", "unit": "allowance" }
+          ]
+        },
+        {
+          "key": "addition.tie_in",
+          "division": "exterior",
+          "prompt": "Tie-in: roofline match (photo existing roof at tie-in), siding match (discontinued siding = whole-wall reside conversations), floor level match",
+          "capture": ["photo", "choice", "note"],
+          "choices": ["clean_match", "siding_match_risk", "roofline_complex", "both_risks"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": ["auto:reside_conversation_if_siding_discontinued"],
+          "bid_mapping": [
+            { "division": "exterior", "description": "Roof tie-in", "unit": "lump" },
+            { "division": "exterior", "description": "Siding tie-in / match", "unit": "lump" }
+          ],
+          "proposal_assumption": "Siding match subject to product availability; discontinued profiles may require re-siding affected wall(s)."
+        },
+        {
+          "key": "addition.structural_opening",
+          "division": "structural_framing",
+          "prompt": "Structural: opening into existing house (bearing wall, beam, engineer)",
+          "capture": ["photo", "choice", "measurement", "note"],
+          "choices": ["existing_opening", "new_opening_nonbearing", "new_opening_bearing"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": ["auto:engineer_if_bearing"],
+          "bid_mapping": [
+            { "division": "structural_framing", "description": "Opening into existing house incl. beam per engineering", "unit": "lump", "when": { "answer_in": ["new_opening_nonbearing", "new_opening_bearing"] } }
+          ]
+        },
+        {
+          "key": "addition.hvac_load",
+          "division": "hvac_mechanical",
+          "prompt": "HVAC load calc: can existing system carry the addition? (mini-split vs extend — a real fork; capture data plate + house SF)",
+          "capture": ["photo", "measurement", "choice", "note"],
+          "choices": ["extend_existing", "mini_split", "load_calc_needed"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": ["hvac_load_calc"],
+          "bid_mapping": [
+            { "division": "hvac_mechanical", "description": "Extend existing HVAC to addition", "unit": "lump", "when": { "answer": "extend_existing" } },
+            { "division": "hvac_mechanical", "description": "Mini-split system", "unit": "ea", "when": { "answer": "mini_split" } }
+          ]
+        },
+        {
+          "key": "addition.electrical",
+          "division": "electrical",
+          "prompt": "Electrical: panel capacity (addition circuits + possible service upgrade), meter location",
+          "capture": ["photo", "measurement", "note"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["auto:service_upgrade_if_capacity_short"],
+          "bid_mapping": [
+            { "division": "electrical", "description": "Addition circuits", "unit": "ea" },
+            { "division": "electrical", "description": "Service upgrade", "unit": "lump", "when": { "flag": "service_upgrade" } }
+          ]
+        },
+        {
+          "key": "addition.plumbing",
+          "division": "plumbing",
+          "prompt": "Plumbing if bath/kitchen in addition: DWV tie-in path, vent path, water heater capacity. Septic capacity check if on septic (bedroom count changes septic sizing legally)",
+          "capture": ["choice", "photo", "note"],
+          "choices": ["no_plumbing", "bath", "kitchen", "both"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["auto:septic_capacity_if_septic_and_bedroom"],
+          "bid_mapping": [
+            { "division": "plumbing", "description": "DWV tie-in + vent path", "unit": "lump", "when": { "answer_in": ["bath", "kitchen", "both"] } },
+            { "division": "exclusions", "description": "Septic system evaluation/expansion by others", "unit": "lump", "when": { "flag": "septic_capacity" } }
+          ]
+        },
+        {
+          "key": "addition.selections",
+          "division": "exterior",
+          "prompt": "Windows/doors/exterior finish selections",
+          "capture": ["choice", "measurement", "note"],
+          "choices": ["selected", "allowance_needed"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "exterior", "description": "Windows & exterior doors", "unit": "ea" },
+            { "division": "allowances", "description": "Window/door/finish selections allowance", "unit": "allowance", "when": { "answer": "allowance_needed" } }
+          ]
+        },
+        {
+          "key": "addition.site",
+          "division": "sitework_concrete",
+          "prompt": "Site: tree removal, access for excavation equipment (photo access path, measure gate/fence openings), spoils removal, erosion control if required",
+          "capture": ["photo", "measurement", "choice", "note"],
+          "choices": ["clear_access", "constrained_access"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": ["auto:hand_dig_premium_if_constrained"],
+          "bid_mapping": [
+            { "division": "sitework_concrete", "description": "Tree removal", "unit": "ea" },
+            { "division": "sitework_concrete", "description": "Spoils removal", "unit": "lump" },
+            { "division": "sitework_concrete", "description": "Erosion control", "unit": "lump" }
+          ]
+        }
+      ]
+    }
+  ]
+}

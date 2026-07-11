@@ -1,0 +1,305 @@
+{
+  "project_type": "kitchen",
+  "version": 1,
+  "name": "Kitchen Remodel",
+  "description": "PROJECT_CONTEXT.md §6.1. Universal block runs first.",
+  "blocks": [
+    {
+      "key": "layout_structure",
+      "title": "Layout & structure",
+      "items": [
+        {
+          "key": "kitchen.scope_tier",
+          "division": "general_conditions",
+          "prompt": "Scope tier: pull-and-replace (same layout), layout change, or full gut? This one choice re-weights the whole checklist.",
+          "capture": ["choice"],
+          "choices": ["pull_and_replace", "layout_change", "full_gut"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": []
+        },
+        {
+          "key": "kitchen.dims",
+          "division": "general_conditions",
+          "prompt": "Overall dims + ceiling height; sketch/photo of layout with appliance locations",
+          "capture": ["measurement", "photo"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": [],
+          "bid_mapping": []
+        },
+        {
+          "key": "kitchen.walls_removed",
+          "division": "structural_framing",
+          "prompt": "Any walls coming out? For each: photo both sides, what's above (second floor? attic?), what's below (beam? nothing?). Flag load-bearing suspect.",
+          "capture": ["photo", "choice", "note"],
+          "choices": ["no_walls_removed", "wall_removal_planned"],
+          "required_level": "conditional",
+          "condition": { "item": "kitchen.scope_tier", "in": ["layout_change", "full_gut"] },
+          "photo_required": true,
+          "flags": ["load_bearing_suspect"],
+          "bid_mapping": [
+            { "division": "structural_framing", "description": "Structural review required (load-bearing status unresolved)", "unit": "lump", "when": { "flag": "load_bearing_suspect" } },
+            { "division": "demolition_disposal", "description": "Wall demolition & disposal", "unit": "lump", "when": { "answer": "wall_removal_planned" } }
+          ],
+          "proposal_assumption": "Load-bearing status of removed wall(s) subject to structural review."
+        },
+        {
+          "key": "kitchen.soffit",
+          "division": "demolition_disposal",
+          "prompt": "Soffit above cabinets: keep or remove? If remove: what's inside it? (very often ductwork, plumbing vents, or electrical — photo required)",
+          "capture": ["photo", "choice", "note"],
+          "choices": ["no_soffit", "keep", "remove_contents_known", "remove_contents_unknown"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": ["auto:unknown_contents_if_remove_contents_unknown"],
+          "bid_mapping": [
+            { "division": "demolition_disposal", "description": "Soffit removal", "unit": "lf", "when": { "answer_in": ["remove_contents_known", "remove_contents_unknown"] } }
+          ],
+          "proposal_assumption": "Soffit contents unknown; rerouting of any concealed ductwork/plumbing/electrical priced after opening."
+        },
+        {
+          "key": "kitchen.window_door_changes",
+          "division": "exterior",
+          "prompt": "Window/door changes: sizes, header implications",
+          "capture": ["measurement", "photo", "note"],
+          "required_level": "optional",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "exterior", "description": "Window/door change incl. header", "unit": "ea" }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "cabinets_counters",
+      "title": "Cabinets & counters",
+      "items": [
+        {
+          "key": "kitchen.cabinets_existing",
+          "division": "demolition_disposal",
+          "prompt": "Existing cabinets: linear feet base, linear feet wall, condition, disposal",
+          "capture": ["measurement", "photo", "note"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "demolition_disposal", "description": "Cabinet demo & disposal", "unit": "lf" }
+          ]
+        },
+        {
+          "key": "kitchen.cabinets_new",
+          "division": "cabinetry_countertops",
+          "prompt": "New cabinets: reface / stock / semi-custom / custom; LF base, LF wall, tall units, island. New island triggers electrical outlet code requirement + possible plumbing/vent if sink.",
+          "capture": ["choice", "measurement", "note"],
+          "choices": ["reface", "stock", "semi_custom", "custom"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["auto:island_outlet_code_if_island"],
+          "bid_mapping": [
+            { "division": "cabinetry_countertops", "description": "Base cabinets supply & install", "unit": "lf" },
+            { "division": "cabinetry_countertops", "description": "Wall cabinets supply & install", "unit": "lf" },
+            { "division": "electrical", "description": "Island receptacle (code required)", "unit": "ea", "when": { "flag": "island" } }
+          ]
+        },
+        {
+          "key": "kitchen.countertop",
+          "division": "cabinetry_countertops",
+          "prompt": "Countertop: material, total SF (measure runs), edge profile, sink cutout count, cooktop cutout, backsplash height decision (4\" vs full-height tile — moves cost between divisions)",
+          "capture": ["choice", "measurement", "note"],
+          "choices": ["laminate", "quartz", "granite", "solid_surface", "butcher_block", "other"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "cabinetry_countertops", "description": "Countertop supply & install", "unit": "sf" },
+            { "division": "tile_stone", "description": "Full-height tile backsplash", "unit": "sf", "when": { "answer": "full_height_backsplash" } }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "plumbing",
+      "title": "Plumbing (conditional intensity based on scope tier)",
+      "items": [
+        {
+          "key": "kitchen.sink_location",
+          "division": "plumbing",
+          "prompt": "Sink staying in place? If moving: distance, drain/vent path — photo of basement/crawl ceiling under kitchen",
+          "capture": ["choice", "measurement", "photo", "note"],
+          "choices": ["staying", "moving"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "plumbing", "description": "Relocate sink drain/supply/vent", "unit": "lump", "when": { "answer": "moving" } }
+          ],
+          "conditional_photo": { "when": { "answer": "moving" }, "prompt": "Photo of basement/crawl ceiling under kitchen (drain/vent path)" }
+        },
+        {
+          "key": "kitchen.plumbing_extras",
+          "division": "plumbing",
+          "prompt": "Disposal, dishwasher location change, ice maker line, pot filler?",
+          "capture": ["choice", "note"],
+          "choices": ["none", "disposal", "dw_move", "ice_maker", "pot_filler"],
+          "multi": true,
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "plumbing", "description": "Garbage disposal install", "unit": "ea", "when": { "answer": "disposal" } },
+            { "division": "plumbing", "description": "Dishwasher relocation rough-in", "unit": "lump", "when": { "answer": "dw_move" } },
+            { "division": "plumbing", "description": "Ice maker line", "unit": "ea", "when": { "answer": "ice_maker" } },
+            { "division": "plumbing", "description": "Pot filler rough-in + fixture install", "unit": "ea", "when": { "answer": "pot_filler" } }
+          ]
+        },
+        {
+          "key": "kitchen.range_fuel",
+          "division": "plumbing",
+          "prompt": "Gas range vs electric: switching? (gas line run OR 240V circuit run — both are commonly missed line items)",
+          "capture": ["choice", "note"],
+          "choices": ["no_change", "electric_to_gas", "gas_to_electric"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "plumbing", "description": "Gas line run to range", "unit": "lump", "when": { "answer": "electric_to_gas" } },
+            { "division": "electrical", "description": "240V range circuit", "unit": "ea", "when": { "answer": "gas_to_electric" } }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "electrical",
+      "title": "Electrical (required interview, not optional)",
+      "items": [
+        {
+          "key": "kitchen.panel_capacity",
+          "division": "electrical",
+          "prompt": "Panel capacity vs new load: modern kitchen needs dedicated circuits for fridge, DW, disposal, microwave, 2x small-appliance 20A, range 240V if electric, hood. Count open slots vs needed circuits.",
+          "capture": ["measurement", "note"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["auto:subpanel_or_upgrade_if_slots_short"],
+          "bid_mapping": [
+            { "division": "electrical", "description": "Subpanel or panel upgrade (circuit count exceeds open slots)", "unit": "lump", "when": { "flag": "subpanel_or_upgrade" } },
+            { "division": "electrical", "description": "Dedicated kitchen circuits per code", "unit": "ea" }
+          ]
+        },
+        {
+          "key": "kitchen.hood",
+          "division": "hvac_mechanical",
+          "prompt": "Hood: recirculating or vented? If vented: exterior wall path or roof? (photo of exterior wall at hood location)",
+          "capture": ["choice", "photo", "note"],
+          "choices": ["recirculating", "vented_exterior_wall", "vented_roof"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "hvac_mechanical", "description": "Hood duct run + exterior cap", "unit": "lump", "when": { "answer_in": ["vented_exterior_wall", "vented_roof"] } },
+            { "division": "electrical", "description": "Hood circuit", "unit": "ea" },
+            { "division": "fixtures_appliances", "description": "Hood install", "unit": "ea" }
+          ],
+          "conditional_photo": { "when": { "answer_in": ["vented_exterior_wall", "vented_roof"] }, "prompt": "Photo of exterior wall at hood location" }
+        },
+        {
+          "key": "kitchen.lighting",
+          "division": "electrical",
+          "prompt": "Lighting plan: recessed count, pendants over island, under-cabinet, switching/dimmers",
+          "capture": ["measurement", "note"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "electrical", "description": "Recessed lights", "unit": "ea" },
+            { "division": "electrical", "description": "Pendant lights over island", "unit": "ea" },
+            { "division": "electrical", "description": "Under-cabinet lighting", "unit": "lf" }
+          ]
+        },
+        {
+          "key": "kitchen.outlet_code",
+          "division": "electrical",
+          "prompt": "Outlet code compliance: GFCI at counters, island/peninsula outlet rules",
+          "capture": ["note", "choice"],
+          "choices": ["compliant", "upgrades_needed"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "electrical", "description": "GFCI/outlet code compliance upgrades", "unit": "lump", "when": { "answer": "upgrades_needed" } }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "finishes",
+      "title": "Finishes",
+      "items": [
+        {
+          "key": "kitchen.flooring",
+          "division": "flooring",
+          "prompt": "Flooring: material, SF, what's under existing (height transition to adjacent rooms — flooring height mismatches are a classic missed item), subfloor condition (soft spots near sink/DW — photo)",
+          "capture": ["choice", "measurement", "photo", "note"],
+          "choices": ["lvp", "tile", "hardwood", "laminate", "other"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["height_transition_check", "subfloor_condition"],
+          "bid_mapping": [
+            { "division": "flooring", "description": "Flooring supply & install", "unit": "sf" },
+            { "division": "flooring", "description": "Subfloor repair", "unit": "sf", "when": { "flag": "subfloor_condition" } },
+            { "division": "flooring", "description": "Transition strips / height reconciliation", "unit": "ea" }
+          ]
+        },
+        {
+          "key": "kitchen.drywall_paint",
+          "division": "drywall_plaster",
+          "prompt": "Drywall condition after demo assumptions, paint scope (walls/ceiling/trim)",
+          "capture": ["note", "choice"],
+          "choices": ["patch_only", "partial_replace", "full_replace"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "drywall_plaster", "description": "Drywall repair/replacement after demo", "unit": "sf" },
+            { "division": "paint_finishes", "description": "Paint walls/ceiling/trim", "unit": "sf" }
+          ],
+          "proposal_assumption": "Drywall behind removed cabinets/soffits assumed patchable; full replacement priced separately if discovered."
+        },
+        {
+          "key": "kitchen.appliances",
+          "division": "fixtures_appliances",
+          "prompt": "Appliances: who supplies (contractor vs owner — allowance or exclusion), install-only list, panel-ready?",
+          "capture": ["choice", "note"],
+          "choices": ["owner_supplies", "contractor_supplies_allowance"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "allowances", "description": "Appliance allowance", "unit": "allowance", "when": { "answer": "contractor_supplies_allowance" } },
+            { "division": "fixtures_appliances", "description": "Appliance install only", "unit": "ea", "when": { "answer": "owner_supplies" } },
+            { "division": "exclusions", "description": "Appliances supplied by owner", "unit": "lump", "when": { "answer": "owner_supplies" } }
+          ]
+        }
+      ]
+    }
+  ]
+}

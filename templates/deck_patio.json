@@ -1,0 +1,196 @@
+{
+  "project_type": "deck_patio",
+  "version": 1,
+  "name": "Deck / Patio",
+  "description": "PROJECT_CONTEXT.md §6.4. Universal block runs first.",
+  "blocks": [
+    {
+      "key": "deck",
+      "title": "Deck",
+      "items": [
+        {
+          "key": "deck.scope",
+          "division": "general_conditions",
+          "prompt": "New vs replace vs repair? If replace: what's salvageable (footings? NEVER assume — flag)",
+          "capture": ["choice", "photo", "note"],
+          "choices": ["new", "replace", "repair"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["footings_never_assume"],
+          "bid_mapping": [
+            { "division": "demolition_disposal", "description": "Existing deck demo & disposal", "unit": "lump", "when": { "answer": "replace" } }
+          ],
+          "proposal_assumption": "Condition of existing footings not verified; bid assumes new footings unless inspection proves reuse."
+        },
+        {
+          "key": "deck.attachment",
+          "division": "structural_framing",
+          "prompt": "Attached vs freestanding? Attached = ledger inspection (photo behind if possible), flashing detail, what siding must be cut",
+          "capture": ["choice", "photo", "note"],
+          "choices": ["attached", "freestanding"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["auto:ledger_inspection_if_attached"],
+          "bid_mapping": [
+            { "division": "structural_framing", "description": "Ledger attachment + flashing detail", "unit": "lf", "when": { "answer": "attached" } }
+          ],
+          "conditional_photo": { "when": { "answer": "attached" }, "prompt": "Photo of ledger area / behind if possible" }
+        },
+        {
+          "key": "deck.dims_height",
+          "division": "structural_framing",
+          "prompt": "Dimensions, height off grade (height drives railing requirement 36\"+ and guard/stair details), levels?",
+          "capture": ["measurement", "photo", "note"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["auto:railing_required_if_30in_plus"],
+          "bid_mapping": []
+        },
+        {
+          "key": "deck.footings",
+          "division": "sitework_concrete",
+          "prompt": "Footings: count, frost depth per local code, soil/slope conditions. Utility locate call BEFORE dig (line item: \"utilities marked by 811\")",
+          "capture": ["measurement", "photo", "note"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["utility_locate_811"],
+          "bid_mapping": [
+            { "division": "sitework_concrete", "description": "Footings to frost depth per local code", "unit": "ea" },
+            { "division": "general_conditions", "description": "Utilities marked by 811 before dig", "unit": "lump" }
+          ]
+        },
+        {
+          "key": "deck.materials",
+          "division": "structural_framing",
+          "prompt": "Framing material, decking material (PT / cedar / composite brand-line — allowance if undecided), fastener type (hidden vs face)",
+          "capture": ["choice", "note"],
+          "choices": ["pt", "cedar", "composite", "undecided"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "structural_framing", "description": "Deck framing", "unit": "sf" },
+            { "division": "exterior", "description": "Decking supply & install", "unit": "sf" },
+            { "division": "allowances", "description": "Decking material allowance (undecided)", "unit": "allowance", "when": { "answer": "undecided" } }
+          ]
+        },
+        {
+          "key": "deck.railing",
+          "division": "exterior",
+          "prompt": "Railing: material, LF, code height, stairs (count risers, landing, grippable rail)",
+          "capture": ["choice", "measurement", "note"],
+          "choices": ["wood", "composite", "metal", "cable", "none_grade_level"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "exterior", "description": "Railing supply & install", "unit": "lf" },
+            { "division": "exterior", "description": "Stairs: risers, landing, grippable rail", "unit": "ea" }
+          ]
+        },
+        {
+          "key": "deck.electrical",
+          "division": "electrical",
+          "prompt": "Electrical: code requires an outlet on decks — commonly missed. Lighting?",
+          "capture": ["choice", "note"],
+          "choices": ["outlet_only", "outlet_plus_lighting", "existing_compliant"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["deck_outlet_code_required"],
+          "bid_mapping": [
+            { "division": "electrical", "description": "Deck receptacle (code required)", "unit": "ea" },
+            { "division": "electrical", "description": "Deck lighting", "unit": "lump", "when": { "answer": "outlet_plus_lighting" } }
+          ]
+        },
+        {
+          "key": "deck.extras",
+          "division": "specialties",
+          "prompt": "Gas line stub for grill? Roof/pergola over? (roof = footing + structural + possibly permit change)",
+          "capture": ["choice", "note"],
+          "choices": ["none", "gas_stub", "roof_pergola", "both"],
+          "required_level": "optional",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["auto:permit_change_if_roof"],
+          "bid_mapping": [
+            { "division": "plumbing", "description": "Gas line stub for grill", "unit": "lump", "when": { "answer_in": ["gas_stub", "both"] } },
+            { "division": "structural_framing", "description": "Roof/pergola structure incl. footings", "unit": "lump", "when": { "answer_in": ["roof_pergola", "both"] } }
+          ]
+        },
+        {
+          "key": "deck.permit_setbacks",
+          "division": "general_conditions",
+          "prompt": "Permit & setbacks: property line distances, HOA approval",
+          "capture": ["measurement", "note"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["hoa_approval_lead_time"],
+          "bid_mapping": [
+            { "division": "general_conditions", "description": "Building permit", "unit": "lump" }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "patio",
+      "title": "Patio",
+      "items": [
+        {
+          "key": "patio.material",
+          "division": "sitework_concrete",
+          "prompt": "Material: pavers | stamped concrete | broom concrete | natural stone",
+          "capture": ["choice"],
+          "choices": ["pavers", "stamped_concrete", "broom_concrete", "natural_stone"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "sitework_concrete", "description": "Patio surface supply & install", "unit": "sf" }
+          ]
+        },
+        {
+          "key": "patio.site",
+          "division": "sitework_concrete",
+          "prompt": "SF, existing surface removal, grade/slope (drainage AWAY from house, step-downs), base prep depth per soil",
+          "capture": ["measurement", "photo", "note"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": ["drainage_away_from_house"],
+          "bid_mapping": [
+            { "division": "demolition_disposal", "description": "Existing surface removal", "unit": "sf" },
+            { "division": "sitework_concrete", "description": "Grading & base prep", "unit": "sf" }
+          ]
+        },
+        {
+          "key": "patio.features",
+          "division": "specialties",
+          "prompt": "Edge restraint, drainage additions (french drain?), steps, seat walls, fire feature (gas line?), lighting (low-voltage run)",
+          "capture": ["choice", "measurement", "note"],
+          "choices": ["none", "french_drain", "steps", "seat_walls", "fire_feature", "lv_lighting"],
+          "multi": true,
+          "required_level": "optional",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "sitework_concrete", "description": "French drain", "unit": "lf", "when": { "answer": "french_drain" } },
+            { "division": "sitework_concrete", "description": "Steps", "unit": "ea", "when": { "answer": "steps" } },
+            { "division": "sitework_concrete", "description": "Seat walls", "unit": "lf", "when": { "answer": "seat_walls" } },
+            { "division": "plumbing", "description": "Gas line to fire feature", "unit": "lump", "when": { "answer": "fire_feature" } },
+            { "division": "electrical", "description": "Low-voltage lighting run", "unit": "lump", "when": { "answer": "lv_lighting" } }
+          ]
+        }
+      ]
+    }
+  ]
+}

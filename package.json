@@ -1,0 +1,19 @@
+{
+  "name": "scopewalk",
+  "private": true,
+  "version": "0.1.0",
+  "description": "ScopeWalk — contractor field scope & bid tool",
+  "workspaces": [
+    "app",
+    "server"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=server & npm run dev --workspace=app",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:app": "npm run dev --workspace=app",
+    "migrate": "npm run migrate --workspace=server",
+    "seed": "npm run seed --workspace=server",
+    "build": "npm run build --workspace=app && npm run build --workspace=server",
+    "typecheck": "npm run typecheck --workspace=server && npm run typecheck --workspace=app"
+  }
+}

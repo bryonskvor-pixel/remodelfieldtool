@@ -39,11 +39,14 @@
 
 ## Current phase
 
-**Pre-Phase 0.** Specification complete (PROJECT_CONTEXT.md v1.0). Open
-questions §14.4–14.6 (intake form hosting, local code defaults, shared DB vs
-DB-per-contractor) should be answered before Phase 0 starts. Architecture is
-locked (§3): Turso embedded replicas, Cloudflare R2, React PWA, Groq Whisper,
-server-side PDF.
+**Phase 0 complete (2026-07-11).** Open questions §14.4–14.6 resolved (see
+PROJECT_CONTEXT.md §14): shared Turso DB with `contractor_id` everywhere,
+intake form stays on the contractor's site POSTing to our API, local code
+defaults live in `contractors.local_code_defaults`. Auth is email magic link
+(console delivery for pilot). Repo layout: `app/` (React PWA, Vite),
+`server/` (Hono API, port 8787), `db/migrations/`, `templates/` (seed JSON
+for all six project types + universal block). Turso credentials live in
+root `.env` (gitignored) — never commit them. Next: Phase 1 (field capture).
 
 ## Out of scope (v1 — see §12)
 

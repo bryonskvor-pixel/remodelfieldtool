@@ -382,7 +382,10 @@ Resolved:
 2. ~~Transcription~~ → **Groq Whisper**, locked (§3).
 3. ~~Signature~~ → **typed name + timestamp + IP**, accepted for now (§3).
 
-Still open, answer before Phase 0:
-4. Who hosts the intake form v1: his existing website platform, or a hosted page we control? Currently intake just emails him with nothing landing in a database — this needs a real answer since it's now a product-selling gap, not just a nice-to-have (§3, §10).
-5. Local code specifics worth encoding as defaults (Ohio frost depth 32"–36" for footings, county permit quirks) — capture from him once, store in contractor profile.
-6. Given multi-tenant intent from the start: who provisions a new contractor's Turso database/tenant when this actually gets sold — one shared DB with `contractor_id` filtering everywhere (Hard Rule 7), or one Turso database per contractor (Turso supports this cheaply since each is just SQLite)? Worth deciding before Phase 0 rather than defaulting silently, since it changes every query pattern in the schema.
+Resolved at Phase 0 kickoff (2026-07-11):
+4. ~~Intake form hosting~~ → **His existing website platform** hosts the form; it POSTs to a ScopeWalk API endpoint (`POST /api/intake/:contractorId`, live since Phase 0). The Lead schema stays intake-source agnostic; a ScopeWalk-hosted page can be added when selling to other contractors.
+5. Local code specifics (Ohio frost depth 32"–36", county permit quirks) → stored in `contractors.local_code_defaults` (JSON column, in schema since Phase 0). **Values still to be captured from Bradford** — not blocking, capture during Phase 1 field use.
+6. ~~Tenancy~~ → **One shared Turso database with `contractor_id` filtering everywhere** (Hard Rule 7). Every table (including child tables like areas/scope_items/photos) carries `contractor_id` directly so no query needs a join to enforce isolation. The one exception: `templates.contractor_id IS NULL` means "system default template."
+
+Also decided at Phase 0 kickoff:
+7. **Auth: email magic link** with long-lived (90-day) device sessions — passwordless, offline-friendly once signed in, extends cleanly to multi-tenant. Pilot email delivery is `EMAIL_PROVIDER=console` (link prints to server log); a real provider slots in before Phase 3.

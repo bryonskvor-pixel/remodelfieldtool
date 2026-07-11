@@ -1,0 +1,105 @@
+{
+  "project_type": "general",
+  "version": 1,
+  "name": "General Remodeling",
+  "description": "PROJECT_CONTEXT.md §6.6. Modular: contractor adds Areas; each area pulls the relevant sub-blocks from other templates (a \"kitchenette\" pulls the kitchen block, a \"hall bath\" pulls the bath block) plus the generic room block below. The universal block always runs.",
+  "modular": true,
+  "area_block_sources": {
+    "kitchenette": "kitchen",
+    "bath": "bath",
+    "basement_area": "basement",
+    "deck": "deck_patio"
+  },
+  "blocks": [
+    {
+      "key": "generic_room",
+      "title": "Generic room block (applies to every area without a specialized template)",
+      "items": [
+        {
+          "key": "general.room_dims",
+          "division": "general_conditions",
+          "prompt": "Room dims + ceiling height, photo of each wall",
+          "capture": ["measurement", "photo"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": [],
+          "bid_mapping": []
+        },
+        {
+          "key": "general.flooring",
+          "division": "flooring",
+          "prompt": "Flooring: existing, planned, SF, transitions to adjacent rooms, subfloor condition",
+          "capture": ["choice", "measurement", "photo", "note"],
+          "choices": ["keep", "replace", "refinish"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["height_transition_check"],
+          "bid_mapping": [
+            { "division": "flooring", "description": "Flooring supply & install", "unit": "sf", "when": { "answer": "replace" } },
+            { "division": "flooring", "description": "Floor refinishing", "unit": "sf", "when": { "answer": "refinish" } }
+          ]
+        },
+        {
+          "key": "general.drywall",
+          "division": "drywall_plaster",
+          "prompt": "Drywall/plaster condition: patches, cracks, water stains (photo), texture match concerns",
+          "capture": ["photo", "choice", "note"],
+          "choices": ["good", "patch_repair", "replace_areas"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "drywall_plaster", "description": "Drywall/plaster repair", "unit": "sf", "when": { "answer_in": ["patch_repair", "replace_areas"] } }
+          ]
+        },
+        {
+          "key": "general.paint",
+          "division": "paint_finishes",
+          "prompt": "Paint scope: walls / ceiling / trim, color count, condition prep needed",
+          "capture": ["choice", "measurement", "note"],
+          "choices": ["walls_only", "walls_ceiling", "walls_ceiling_trim", "none"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "paint_finishes", "description": "Paint", "unit": "sf" }
+          ]
+        },
+        {
+          "key": "general.trim_doors",
+          "division": "doors_trim_carpentry",
+          "prompt": "Trim & interior doors: base/case profile match, door count, hardware",
+          "capture": ["choice", "measurement", "photo", "note"],
+          "choices": ["keep", "replace_doors", "replace_trim", "replace_both"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "doors_trim_carpentry", "description": "Interior doors supply & install", "unit": "ea", "when": { "answer_in": ["replace_doors", "replace_both"] } },
+            { "division": "doors_trim_carpentry", "description": "Trim supply & install", "unit": "lf", "when": { "answer_in": ["replace_trim", "replace_both"] } }
+          ]
+        },
+        {
+          "key": "general.electrical_devices",
+          "division": "electrical",
+          "prompt": "Electrical devices & lighting: outlet/switch count and condition, fixture changes, code items (ungrounded outlets, missing GFCI)",
+          "capture": ["choice", "measurement", "photo", "note"],
+          "choices": ["no_change", "devices_only", "fixtures_and_devices", "code_upgrades_needed"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "electrical", "description": "Devices & lighting fixtures", "unit": "ea", "when": { "answer_in": ["devices_only", "fixtures_and_devices"] } },
+            { "division": "electrical", "description": "Electrical code upgrades", "unit": "lump", "when": { "answer": "code_upgrades_needed" } }
+          ]
+        }
+      ]
+    }
+  ]
+}

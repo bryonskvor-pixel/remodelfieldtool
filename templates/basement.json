@@ -1,0 +1,188 @@
+{
+  "project_type": "basement",
+  "version": 1,
+  "name": "Basement Finishing",
+  "description": "PROJECT_CONTEXT.md §6.3. Universal block runs first.",
+  "blocks": [
+    {
+      "key": "basement_main",
+      "title": "Basement",
+      "items": [
+        {
+          "key": "basement.moisture",
+          "division": "general_conditions",
+          "prompt": "Moisture FIRST: any history of water (ask homeowner, log answer verbatim)? Efflorescence/staining on walls (photo EVERY wall)? Sump pump present/working? Perimeter drain? Dehumidifier? RULE: visible moisture = \"moisture remediation by others or separate scope\" assumption before ANY finishing scope.",
+          "capture": ["photo", "choice", "voice", "note"],
+          "choices": ["dry_no_history", "history_reported", "visible_moisture"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": ["auto:moisture_remediation_gate_if_visible"],
+          "bid_mapping": [
+            { "division": "exclusions", "description": "Moisture remediation by others or separate scope; finishing bid assumes dry basement", "unit": "lump", "when": { "answer_in": ["history_reported", "visible_moisture"] } }
+          ],
+          "proposal_assumption": "Bid assumes basement remains dry; any water intrusion remediation is a separate scope."
+        },
+        {
+          "key": "basement.ceiling_height",
+          "division": "general_conditions",
+          "prompt": "Ceiling height: measure at LOWEST obstruction (duct/beam) — code minimums for habitable space. Soffit/wrap plan for ducts and beams.",
+          "capture": ["measurement", "photo", "note"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": ["auto:code_min_height_check"],
+          "bid_mapping": [
+            { "division": "doors_trim_carpentry", "description": "Soffit/wrap framing for ducts & beams", "unit": "lf" }
+          ]
+        },
+        {
+          "key": "basement.egress",
+          "division": "sitework_concrete",
+          "prompt": "Egress: any bedroom planned = egress window/well REQUIRED (excavation, cutting foundation, well, ladder). Make-or-break line item.",
+          "capture": ["choice", "photo", "note"],
+          "choices": ["no_bedroom", "bedroom_planned_egress_exists", "bedroom_planned_egress_needed"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["auto:egress_required_if_bedroom"],
+          "bid_mapping": [
+            { "division": "sitework_concrete", "description": "Egress window: excavation, foundation cut, well, ladder", "unit": "ea", "when": { "answer": "bedroom_planned_egress_needed" } }
+          ]
+        },
+        {
+          "key": "basement.layout",
+          "division": "general_conditions",
+          "prompt": "Layout: rooms planned, measure full footprint, note columns/posts",
+          "capture": ["measurement", "photo", "note"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": [],
+          "bid_mapping": []
+        },
+        {
+          "key": "basement.stairs",
+          "division": "doors_trim_carpentry",
+          "prompt": "Stairs: code compliance of existing (rise/run, headroom, railing), lighting at stairs",
+          "capture": ["measurement", "photo", "choice", "note"],
+          "choices": ["compliant", "upgrades_needed"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": ["headroom_code_check"],
+          "bid_mapping": [
+            { "division": "doors_trim_carpentry", "description": "Stair code upgrades (rise/run, railing)", "unit": "lump", "when": { "answer": "upgrades_needed" } },
+            { "division": "electrical", "description": "Stair lighting", "unit": "ea" }
+          ]
+        },
+        {
+          "key": "basement.framing_insulation",
+          "division": "structural_framing",
+          "prompt": "Framing: wood vs steel. Insulation approach per code (rim joist too), vapor strategy.",
+          "capture": ["choice", "note"],
+          "choices": ["wood", "steel"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "structural_framing", "description": "Perimeter & partition framing", "unit": "lf" },
+            { "division": "insulation_air_sealing", "description": "Wall insulation + vapor strategy per code", "unit": "sf" },
+            { "division": "insulation_air_sealing", "description": "Rim joist insulation & air sealing", "unit": "lf" }
+          ]
+        },
+        {
+          "key": "basement.ceiling_type",
+          "division": "drywall_plaster",
+          "prompt": "Ceiling type: drywall vs drop. Ask what access is needed later (shutoffs, junctions, cleanouts) — access panels line item.",
+          "capture": ["choice", "note"],
+          "choices": ["drywall", "drop", "mixed"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "drywall_plaster", "description": "Ceiling drywall", "unit": "sf", "when": { "answer_in": ["drywall", "mixed"] } },
+            { "division": "specialties", "description": "Drop ceiling grid & tile", "unit": "sf", "when": { "answer_in": ["drop", "mixed"] } },
+            { "division": "specialties", "description": "Access panels (shutoffs, junctions, cleanouts)", "unit": "ea" }
+          ]
+        },
+        {
+          "key": "basement.hvac",
+          "division": "hvac_mechanical",
+          "prompt": "HVAC: extend supply/return? Does existing system have capacity? Separate zone?",
+          "capture": ["choice", "note"],
+          "choices": ["extend_existing", "capacity_concern", "separate_zone"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["hvac_capacity_concern"],
+          "bid_mapping": [
+            { "division": "hvac_mechanical", "description": "Extend supply & return ducts", "unit": "lump" },
+            { "division": "hvac_mechanical", "description": "HVAC capacity evaluation / separate zone", "unit": "lump", "when": { "answer_in": ["capacity_concern", "separate_zone"] } }
+          ]
+        },
+        {
+          "key": "basement.electrical",
+          "division": "electrical",
+          "prompt": "Electrical: subpanel likely (count circuits: lighting, outlets per code spacing, bathroom, media), panel capacity check",
+          "capture": ["measurement", "note"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["auto:subpanel_if_circuits_exceed_slots"],
+          "bid_mapping": [
+            { "division": "electrical", "description": "Subpanel", "unit": "ea", "when": { "flag": "subpanel" } },
+            { "division": "electrical", "description": "Circuits: lighting, outlets per code spacing, media", "unit": "ea" }
+          ]
+        },
+        {
+          "key": "basement.bathroom",
+          "division": "plumbing",
+          "prompt": "Bathroom: existing rough-in (photo, VERIFY locations) or new (breaking slab = plumbing under slab line items; ejector pit if below sewer line)?",
+          "capture": ["choice", "photo", "note"],
+          "choices": ["no_bathroom", "existing_rough_in", "new_break_slab"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["auto:ejector_pit_if_below_sewer"],
+          "bid_mapping": [
+            { "division": "sitework_concrete", "description": "Slab cut & patch for under-slab plumbing", "unit": "lump", "when": { "answer": "new_break_slab" } },
+            { "division": "plumbing", "description": "Under-slab drain/vent rough-in", "unit": "lump", "when": { "answer": "new_break_slab" } },
+            { "division": "plumbing", "description": "Sewage ejector pit & pump", "unit": "ea", "when": { "flag": "ejector_pit" } }
+          ],
+          "conditional_photo": { "when": { "answer": "existing_rough_in" }, "prompt": "Photo of existing rough-in; verify locations against planned layout" }
+        },
+        {
+          "key": "basement.windows",
+          "division": "exterior",
+          "prompt": "Windows: existing condition, add/enlarge?",
+          "capture": ["photo", "choice", "note"],
+          "choices": ["keep", "replace", "add_or_enlarge"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "exterior", "description": "Basement window replacement/addition", "unit": "ea", "when": { "answer_in": ["replace", "add_or_enlarge"] } }
+          ]
+        },
+        {
+          "key": "basement.utilities_in_way",
+          "division": "general_conditions",
+          "prompt": "Utilities in the way: relocate laundry? Water heater / furnace clearances maintained?",
+          "capture": ["photo", "choice", "note"],
+          "choices": ["clear", "relocation_needed", "clearance_concern"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "plumbing", "description": "Laundry relocation", "unit": "lump", "when": { "answer": "relocation_needed" } }
+          ]
+        }
+      ]
+    }
+  ]
+}

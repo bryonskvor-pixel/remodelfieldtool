@@ -1,0 +1,217 @@
+{
+  "project_type": "universal",
+  "version": 1,
+  "name": "Universal Walkthrough Block",
+  "description": "Runs first on EVERY project type (PROJECT_CONTEXT.md §6.0).",
+  "blocks": [
+    {
+      "key": "property_access",
+      "title": "Property & access",
+      "items": [
+        {
+          "key": "universal.year_built",
+          "division": "general_conditions",
+          "prompt": "Year built? (drives lead paint / asbestos flags automatically)",
+          "capture": ["measurement"],
+          "unit": "year",
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["auto:lead_paint_pre_1978", "auto:asbestos_era_pre_1985"],
+          "bid_mapping": []
+        },
+        {
+          "key": "universal.occupied",
+          "division": "general_conditions",
+          "prompt": "Occupied during work? Pets? Kids? Working-hours restrictions?",
+          "capture": ["choice", "note"],
+          "choices": ["occupied", "vacant", "partially"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "general_conditions", "description": "Floor & dust protection (occupied home)", "unit": "lump", "when": { "answer": "occupied" } }
+          ]
+        },
+        {
+          "key": "universal.staging",
+          "division": "general_conditions",
+          "prompt": "Parking / material staging location / dumpster placement",
+          "capture": ["photo", "note"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "demolition_disposal", "description": "Dumpster", "unit": "ea" }
+          ]
+        },
+        {
+          "key": "universal.path_of_travel",
+          "division": "general_conditions",
+          "prompt": "Path of travel from entry to work area: floor protection needed? Tight turns for materials (photo narrowest point)? Stairs?",
+          "capture": ["photo", "note", "measurement"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "general_conditions", "description": "Path-of-travel protection", "unit": "lump" }
+          ]
+        },
+        {
+          "key": "universal.hoa_historic",
+          "division": "general_conditions",
+          "prompt": "HOA or historic district? (approval lead time kills schedules)",
+          "capture": ["choice", "note"],
+          "choices": ["none", "hoa", "historic_district", "both"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["hoa_approval_lead_time"],
+          "bid_mapping": []
+        },
+        {
+          "key": "universal.existing_damage",
+          "division": "general_conditions",
+          "prompt": "Existing damage documentation: photo anything already damaged along the path of travel BEFORE work starts",
+          "capture": ["photo", "note"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": ["liability_documentation"],
+          "bid_mapping": []
+        }
+      ]
+    },
+    {
+      "key": "systems_snapshot",
+      "title": "Systems snapshot (always, even if \"not relevant,\" because it is)",
+      "items": [
+        {
+          "key": "universal.electrical_panel",
+          "division": "electrical",
+          "prompt": "Electrical panel: photo of open panel + panel label. Brand, amperage, breaker slots open, visible condition, location, GFCI/AFCI presence",
+          "capture": ["photo", "choice", "note", "measurement"],
+          "choices": ["ok", "federal_pacific", "zinsco", "challenger", "split_bus", "other_concern"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": ["auto:panel_brand_risk_if_fpe_zinsco_challenger_splitbus"],
+          "bid_mapping": [
+            { "division": "electrical", "description": "Panel replacement / service upgrade (brand or capacity risk)", "unit": "lump", "when": { "flag": "panel_brand_risk" } }
+          ]
+        },
+        {
+          "key": "universal.water_supply",
+          "division": "plumbing",
+          "prompt": "Water supply: main material (copper / galvanized / PEX / polybutylene), main shutoff location + does it actually work, water heater age/type/size (photo data plate), visible pipe material at fixtures",
+          "capture": ["photo", "choice", "note"],
+          "choices": ["copper", "galvanized", "pex", "polybutylene", "mixed", "unknown"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": ["auto:supply_material_risk_if_galvanized_or_polybutylene"],
+          "bid_mapping": []
+        },
+        {
+          "key": "universal.hvac",
+          "division": "hvac_mechanical",
+          "prompt": "HVAC: system type, age (photo of data plate), does ductwork reach the work area, capacity concern for additions/basements",
+          "capture": ["photo", "choice", "note"],
+          "choices": ["forced_air", "boiler", "heat_pump", "mini_split", "other"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": ["hvac_capacity_concern"],
+          "bid_mapping": []
+        },
+        {
+          "key": "universal.gas",
+          "division": "plumbing",
+          "prompt": "Gas: service present? Meter location, visible line material (black iron / CSST — bonding check)",
+          "capture": ["photo", "choice", "note"],
+          "choices": ["no_gas", "black_iron", "csst", "mixed", "unknown"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["auto:csst_bonding_check"],
+          "bid_mapping": [
+            { "division": "electrical", "description": "CSST bonding verification/correction", "unit": "lump", "when": { "answer": "csst" } }
+          ]
+        },
+        {
+          "key": "universal.sewer_septic",
+          "division": "plumbing",
+          "prompt": "Sewer or septic? (septic changes bathroom/addition math) Known issues?",
+          "capture": ["choice", "note"],
+          "choices": ["sewer", "septic", "unknown"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["septic_capacity_math"],
+          "bid_mapping": []
+        }
+      ]
+    },
+    {
+      "key": "environmental_safety",
+      "title": "Environmental & safety",
+      "items": [
+        {
+          "key": "universal.lead_paint",
+          "division": "general_conditions",
+          "prompt": "Pre-1978: lead-safe practices required (EPA RRP). Flag on bid as compliance line item",
+          "capture": ["choice"],
+          "choices": ["pre_1978", "post_1978", "unknown"],
+          "required_level": "conditional",
+          "condition": { "item": "universal.year_built", "lt": 1978 },
+          "photo_required": false,
+          "flags": ["epa_rrp_required"],
+          "bid_mapping": [
+            { "division": "general_conditions", "description": "Lead-safe work practices (EPA RRP compliance)", "unit": "lump" }
+          ]
+        },
+        {
+          "key": "universal.asbestos_suspect",
+          "division": "general_conditions",
+          "prompt": "Suspect asbestos: 9x9 tile, vermiculite insulation, pipe wrap, popcorn ceiling (pre-1985). Photo, flag \"test before disturbing\" — never scope removal without testing",
+          "capture": ["photo", "choice", "note"],
+          "choices": ["none_visible", "suspect_material_present"],
+          "required_level": "conditional",
+          "condition": { "item": "universal.year_built", "lt": 1985 },
+          "photo_required": true,
+          "flags": ["asbestos_test_before_disturbing"],
+          "bid_mapping": [
+            { "division": "exclusions", "description": "Asbestos testing/abatement by others; bid assumes materials are non-asbestos pending testing", "unit": "lump", "when": { "answer": "suspect_material_present" } }
+          ]
+        },
+        {
+          "key": "universal.mold_moisture",
+          "division": "general_conditions",
+          "prompt": "Mold/moisture staining anywhere visible (photo)",
+          "capture": ["photo", "choice", "note"],
+          "choices": ["none_visible", "staining_present"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["moisture_present"],
+          "bid_mapping": []
+        },
+        {
+          "key": "universal.radon",
+          "division": "general_conditions",
+          "prompt": "Radon (basement projects, region-dependent): existing system? Known test results?",
+          "capture": ["choice", "note"],
+          "choices": ["no_system", "system_present", "unknown"],
+          "required_level": "conditional",
+          "condition": { "project_type": "basement" },
+          "photo_required": false,
+          "flags": ["radon_region_flag"],
+          "bid_mapping": []
+        }
+      ]
+    }
+  ]
+}

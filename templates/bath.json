@@ -1,0 +1,200 @@
+{
+  "project_type": "bath",
+  "version": 1,
+  "name": "Bathroom Remodel",
+  "description": "PROJECT_CONTEXT.md §6.2. Universal block runs first.",
+  "blocks": [
+    {
+      "key": "bath_main",
+      "title": "Bathroom",
+      "items": [
+        {
+          "key": "bath.scope_tier",
+          "division": "general_conditions",
+          "prompt": "Scope tier: refresh, pull-and-replace, gut, or layout change?",
+          "capture": ["choice"],
+          "choices": ["refresh", "pull_and_replace", "gut", "layout_change"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": []
+        },
+        {
+          "key": "bath.dims",
+          "division": "general_conditions",
+          "prompt": "Dims, ceiling height, door swing",
+          "capture": ["measurement", "photo"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": []
+        },
+        {
+          "key": "bath.tub_shower",
+          "division": "plumbing",
+          "prompt": "Tub/shower: existing vs planned. Tub-to-shower conversion is its own path: curb vs curbless (curbless needs floor recess/joist review). Wet-area wall SF for tile. Niche/bench/grab-bar blocking — blocking is cheap now, impossible later, always ask.",
+          "capture": ["choice", "measurement", "photo", "note"],
+          "choices": ["keep_existing", "replace_in_kind", "tub_to_shower_curb", "tub_to_shower_curbless", "new_layout"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": ["auto:joist_review_if_curbless"],
+          "bid_mapping": [
+            { "division": "plumbing", "description": "Tub/shower valve & rough-in", "unit": "lump" },
+            { "division": "structural_framing", "description": "Floor recess / joist modification for curbless shower (structural review)", "unit": "lump", "when": { "answer": "tub_to_shower_curbless" } },
+            { "division": "doors_trim_carpentry", "description": "Blocking for niche/bench/grab bars", "unit": "lump" }
+          ]
+        },
+        {
+          "key": "bath.waterproofing",
+          "division": "tile_stone",
+          "prompt": "Waterproofing system (must be a NAMED line item, not assumed inside \"tile\")",
+          "capture": ["choice", "note"],
+          "choices": ["sheet_membrane", "liquid_membrane", "foam_board_system", "tbd"],
+          "required_level": "required",
+          "condition": { "item": "bath.scope_tier", "in": ["pull_and_replace", "gut", "layout_change"] },
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "tile_stone", "description": "Shower waterproofing system", "unit": "lump" }
+          ]
+        },
+        {
+          "key": "bath.tile",
+          "division": "tile_stone",
+          "prompt": "Tile: floor SF, wall SF, size/pattern (large format & herringbone = labor multiplier), heated floor? (dedicated circuit + thermostat)",
+          "capture": ["measurement", "choice", "note"],
+          "choices": ["standard_pattern", "large_format", "herringbone_or_complex"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["auto:labor_multiplier_if_large_format_or_complex"],
+          "bid_mapping": [
+            { "division": "tile_stone", "description": "Floor tile", "unit": "sf" },
+            { "division": "tile_stone", "description": "Wall tile (wet area)", "unit": "sf" },
+            { "division": "electrical", "description": "Heated floor circuit + thermostat", "unit": "lump", "when": { "flag": "heated_floor" } },
+            { "division": "tile_stone", "description": "Heated floor mat/cable install", "unit": "sf", "when": { "flag": "heated_floor" } }
+          ]
+        },
+        {
+          "key": "bath.vanity",
+          "division": "cabinetry_countertops",
+          "prompt": "Vanity: size, single/double (double = second drain/supply rough-in), top material, mirrors/medicine cabinet (recessed = wall opening)",
+          "capture": ["choice", "measurement", "note"],
+          "choices": ["single", "double"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "cabinetry_countertops", "description": "Vanity + top supply & install", "unit": "ea" },
+            { "division": "plumbing", "description": "Second sink drain/supply rough-in", "unit": "lump", "when": { "answer": "double" } },
+            { "division": "specialties", "description": "Mirror / medicine cabinet", "unit": "ea" }
+          ]
+        },
+        {
+          "key": "bath.toilet",
+          "division": "plumbing",
+          "prompt": "Toilet: staying put or relocating? (flange move = subfloor + joist question, photo below if accessible). Flange condition?",
+          "capture": ["choice", "photo", "note"],
+          "choices": ["staying", "relocating"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["auto:joist_subfloor_question_if_relocating"],
+          "bid_mapping": [
+            { "division": "plumbing", "description": "Toilet flange relocation (subfloor/joist work)", "unit": "lump", "when": { "answer": "relocating" } },
+            { "division": "plumbing", "description": "Toilet supply & install", "unit": "ea" }
+          ],
+          "conditional_photo": { "when": { "answer": "relocating" }, "prompt": "Photo below toilet location if accessible (basement/crawl)" }
+        },
+        {
+          "key": "bath.exhaust_fan",
+          "division": "hvac_mechanical",
+          "prompt": "Exhaust fan: exists? Vents to exterior or attic? (attic-dumping fans are a code fix line item). CFM upgrade?",
+          "capture": ["choice", "note"],
+          "choices": ["none", "vents_exterior", "vents_attic"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": ["auto:code_fix_if_vents_attic"],
+          "bid_mapping": [
+            { "division": "hvac_mechanical", "description": "Exhaust fan duct to exterior (code fix)", "unit": "lump", "when": { "answer_in": ["none", "vents_attic"] } },
+            { "division": "electrical", "description": "Exhaust fan supply & install", "unit": "ea" }
+          ]
+        },
+        {
+          "key": "bath.plumbing_access",
+          "division": "plumbing",
+          "prompt": "Plumbing access: what's below/behind (photo)? Shutoffs work?",
+          "capture": ["photo", "choice", "note"],
+          "choices": ["accessible", "limited", "no_access"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": [],
+          "bid_mapping": []
+        },
+        {
+          "key": "bath.electrical",
+          "division": "electrical",
+          "prompt": "Electrical: GFCI, dedicated circuits (heated floor, whirlpool/steam if any), lighting, panel capacity check",
+          "capture": ["choice", "measurement", "note"],
+          "choices": ["compliant", "upgrades_needed"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "electrical", "description": "Bath electrical upgrades (GFCI, circuits, lighting)", "unit": "lump", "when": { "answer": "upgrades_needed" } }
+          ]
+        },
+        {
+          "key": "bath.window_wet_zone",
+          "division": "exterior",
+          "prompt": "Window in wet zone? (privacy glass / waterproof trim detail)",
+          "capture": ["choice", "photo", "note"],
+          "choices": ["no_window", "window_in_wet_zone", "window_outside_wet_zone"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "specialties", "description": "Wet-zone window waterproof trim detail / privacy glass", "unit": "ea", "when": { "answer": "window_in_wet_zone" } }
+          ]
+        },
+        {
+          "key": "bath.subfloor",
+          "division": "flooring",
+          "prompt": "Subfloor condition around toilet/tub (probe, photo)",
+          "capture": ["photo", "choice", "note"],
+          "choices": ["solid", "soft_spots", "visible_damage"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": true,
+          "flags": ["subfloor_condition"],
+          "bid_mapping": [
+            { "division": "flooring", "description": "Subfloor repair/replacement", "unit": "sf", "when": { "answer_in": ["soft_spots", "visible_damage"] } }
+          ],
+          "proposal_assumption": "Subfloor assumed sound beyond probed areas; concealed damage priced on discovery."
+        },
+        {
+          "key": "bath.shower_glass",
+          "division": "allowances",
+          "prompt": "Glass: shower door type — measured after tile, ALWAYS an allowance",
+          "capture": ["choice", "note"],
+          "choices": ["framed", "semi_frameless", "frameless", "curtain_only", "tbd"],
+          "required_level": "required",
+          "condition": null,
+          "photo_required": false,
+          "flags": [],
+          "bid_mapping": [
+            { "division": "allowances", "description": "Shower glass allowance (measured after tile)", "unit": "allowance" }
+          ]
+        }
+      ]
+    }
+  ]
+}
