@@ -25,9 +25,11 @@
   Test lead deleted after. PWA production build passes.
 
 **State**
-- Phase 0 done. Server runs with `npm run dev:server`, app with
-  `npm run dev:app` (Vite proxies /api → :8787). `.env` at repo root holds
-  Turso credentials (gitignored). Placeholder PWA icons (solid orange).
+- Phase 0 done and **verified by Bryon in the browser**: sign-in via magic
+  link and home screen both work end-to-end. Server runs with
+  `npm run dev:server`, app with `npm run dev:app` (Vite proxies /api →
+  :8787). `.env` at repo root holds Turso credentials (gitignored).
+  Placeholder PWA icons (solid orange).
 
 **Next steps**
 - Phase 1: walkthrough capture flow (universal → project-type blocks →
