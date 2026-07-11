@@ -1,5 +1,66 @@
 # Session Notes — ScopeWalk (remodelfieldtool)
 
+## 2026-07-11 (session 4) — Phase 1 media sync: R2 + Groq transcription
+
+**Accomplished**
+- Media pipeline end-to-end (spec'd in PROJECT_CONTEXT §3 "Media pipeline"):
+  - Server: `server/src/r2.ts` (R2 S3 API via aws4fetch), `media.ts` routes
+    (`POST/GET /api/media/photo|audio/:id` + `GET /api/media/transcript/:id`),
+    all requireSession + ownership-checked on the owning row (Hard Rule 7) —
+    server-mediated by choice, no presigned URLs. Keys:
+    `c/<contractor_id>/photos|audio/<row_id>.*`.
+  - Server: `transcribe.ts` — in-process Groq Whisper queue
+    (whisper-large-v3-turbo), retry ×3 with backoff, boot-time recovery of
+    notes with audio in R2 but no transcript. Only fills an EMPTY transcript
+    (contractor edits always win). Real transcription measured at ~2.3 s.
+  - App: `app/src/db/media.ts` — after rows push, the sync pass uploads
+    pending blobs (photo + on-device ≤320px thumbnail as multipart; audio
+    raw), updates r2_key/thumbnail_key/audio_r2_key + sync_status locally as
+    CLEAN writes (no dirty-loop), failures retry next pass; brief transcript
+    polling after audio upload so it appears live.
+  - Pull-merge: `/api/bootstrap` now returns areas/scope_items/photos/notes;
+    app merges via `putServer` (LWW; locally-dirty rows always win). This is
+    the second-device path. Sync badge counts owed media as pending.
+  - UI: BlobThumb falls back to `/api/media/photo/:id?variant=thumb` when the
+    local blob is gone; new NoteLine component renders transcripts with
+    tap-to-edit (edit syncs as a normal row write); Review screen now shows
+    photo thumbs + transcripts per item.
+- Capture-driven area dims: an L×W measurement on a `*dims*` prompt writes
+  `areas.length_ft/width_ft/floor_sf` (latest wins, contractor-overridable).
+- Milestone VERIFIED (automated two-browser-profile Playwright run):
+  offline kitchen capture with photo + voice note → reconnect → photo in R2,
+  transcript in seconds, second profile on the same account renders the photo
+  from R2 + shows/edits the transcript + has the pulled area dims. Server
+  smoke (`server/scripts/smoke-media.ts`) covers upload/download roundtrips,
+  unowned-row 404, and bootstrap child rows; cleans up rows AND R2 objects.
+- Fixed `.env`: the R2 endpoint URL had been pasted into `R2_ACCOUNT_ID`
+  (code now tolerates either form). `.env.example` checked: clean.
+
+**State**
+- Phase 1 remaining: photo annotation, GPS-at-start, and Bryon's real-phone
+  walkthrough (camera/mic need HTTPS or localhost — same caveat as before).
+- Typecheck (both workspaces) + 18 vitest tests pass. Dev servers stopped.
+- One project left in Turso: "Miller" kitchen (2e7705f2…, from earlier
+  testing — left alone; `server/scripts/cleanup-walkthrough.ts <wt_id>`
+  removes a test walkthrough incl. its R2 objects if wanted).
+- New dev helpers: `smoke-media.ts`, `cleanup-walkthrough.ts`,
+  `list-projects.ts` (all under server/scripts/).
+
+**Next steps**
+- Bryon: real-phone offline run (the true Phase 1 milestone).
+- Photo annotation + GPS-at-start, or explicitly defer them to Phase 3.
+- Then Phase 2: bid sheet generation + price book + proposal.
+- Still parked: Ohio local-code defaults from Bradford; rotate Turso token.
+
+**Context**
+- Transcripts are internal-only (Hard Rule 5) — when Phase 2 builds the
+  proposal renderer, NoteLine/transcript data must never cross into
+  customer-facing output.
+- The media upload runs INSIDE syncNow after row push (rows must exist
+  server-side for the ownership check) — don't reorder.
+- Groq on near-silent audio returns filler ("um", "."); server writes
+  "(no speech detected)" only for fully empty results.
+
 ## 2026-07-11 (session 3) — Phase 1 capture slice: offline walkthrough flow
 
 **Accomplished**

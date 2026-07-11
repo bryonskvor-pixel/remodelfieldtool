@@ -39,17 +39,25 @@
 
 ## Current phase
 
-**Phase 1 capture slice done (2026-07-11); Phase 1 continues.** The offline
-walkthrough capture flow works end-to-end (verified in-browser with network
-off: capture → reload → nothing lost → syncs on reconnect). App-side offline
-store is IndexedDB (embedded replicas are server-side only — see §3
-clarification in PROJECT_CONTEXT.md); dirty rows push to `POST /api/sync`,
-which enforces Hard Rule 7 (contractor_id from session, ownership-guarded
-upserts). Completeness engine v1 lives in `app/src/walkthrough/` with vitest
-tests (`npm test`). Repo layout: `app/` (React PWA, Vite), `server/` (Hono
-API, port 8787), `db/migrations/`, `templates/` (seed JSON). Turso
-credentials live in root `.env` (gitignored) — never commit them.
-Next: R2 photo/audio upload + Groq transcription queue, then Phase 2.
+**Phase 1 media-sync slice done (2026-07-11); Phase 1 nearly complete.** The
+offline capture flow works end-to-end, and media now flows too: photo/audio
+blobs upload from IndexedDB to R2 via server-mediated `/api/media/*`
+endpoints (ownership-checked per Hard Rule 7 — no presigned URLs), a
+background Groq Whisper queue writes transcripts back (editable in UI,
+internal-only per Hard Rule 5), and `GET /api/bootstrap` pull-merges all
+entity rows so a second device renders everything (LWW, locally-dirty rows
+win). L×W measurements on dims prompts write through to
+`areas.length_ft/width_ft/floor_sf`. Verified in an automated two-device
+browser run (offline capture → reconnect → photo in R2, transcript in
+seconds, second device renders both). App-side offline store is IndexedDB
+(embedded replicas are server-side only — §3 in PROJECT_CONTEXT.md); dirty
+rows push to `POST /api/sync`. Completeness engine v1 lives in
+`app/src/walkthrough/` with vitest tests (`npm test`). Repo layout: `app/`
+(React PWA, Vite), `server/` (Hono API, port 8787), `db/migrations/`,
+`templates/` (seed JSON). Turso/Groq/R2 credentials live in root `.env`
+(gitignored) — never commit them.
+Remaining for Phase 1: photo annotation, GPS-at-start, Bryon's real-phone
+run; then Phase 2 (bid sheet + proposal).
 
 ## Out of scope (v1 — see §12)
 

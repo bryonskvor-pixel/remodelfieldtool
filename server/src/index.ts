@@ -6,6 +6,8 @@ import { getDb } from "./db.js";
 import { migrate } from "./migrate.js";
 import { requestMagicLink, requireSession, verifyMagicLink } from "./auth.js";
 import { applySyncBatch, type SyncBatch } from "./sync.js";
+import { media } from "./media.js";
+import { recoverPendingTranscriptions } from "./transcribe.js";
 
 type Env = { Variables: { contractorId: string } };
 
@@ -148,14 +150,34 @@ app.get("/api/bootstrap", requireSession, async (c) => {
     sql: `SELECT * FROM leads WHERE contractor_id = ? ORDER BY created_at DESC LIMIT 50`,
     args: [contractorId],
   });
+  // Walkthrough child rows, so a second device (or a device with cleared
+  // storage) can render captured walkthroughs — including transcripts written
+  // by the server-side Groq queue. Pilot scale: everything the contractor
+  // owns; revisit with per-walkthrough pulls when data outgrows this.
+  const pull = (table: string) =>
+    db.execute({
+      // Hard Rule 7: contractor-scoped query filters by contractor_id.
+      sql: `SELECT * FROM ${table} WHERE contractor_id = ?`,
+      args: [contractorId],
+    });
+  const [areas, scopeItems, photos, notes] = await Promise.all([
+    pull("areas"), pull("scope_items"), pull("photos"), pull("notes"),
+  ]);
   return c.json({
     contractor: contractor.rows[0],
     templates: [...byType.values()],
     projects: projects.rows,
     walkthroughs: walkthroughs.rows,
     leads: leads.rows,
+    areas: areas.rows,
+    scope_items: scopeItems.rows,
+    photos: photos.rows,
+    notes: notes.rows,
   });
 });
+
+// Media upload/download + transcript poll (Phase 1 R2/Groq slice).
+app.route("/api/media", media);
 
 // Batch upsert from the app's offline store. contractor_id comes from the
 // session inside applySyncBatch, never from the payload (Hard Rule 7).
@@ -170,6 +192,7 @@ app.post("/api/sync", requireSession, async (c) => {
 
 const port = Number(process.env.PORT ?? 8787);
 await migrate();
+await recoverPendingTranscriptions();
 serve({ fetch: app.fetch, port }, (info) => {
   console.log(`ScopeWalk API listening on http://localhost:${info.port}`);
 });

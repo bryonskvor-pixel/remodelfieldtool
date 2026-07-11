@@ -47,7 +47,26 @@ export async function saveChoice(step: Step, existing: ScopeItem | null, choice:
 export async function addMeasurement(step: Step, existing: ScopeItem | null, m: Measurement): Promise<ScopeItem> {
   const si = await ensureScopeItem(step, existing);
   const all = [...parsedMeasurements(si), m];
-  return db.scope_items.put({ ...si, measurements: JSON.stringify(all), skipped: 0, skip_reason: null });
+  const saved = await db.scope_items.put({ ...si, measurements: JSON.stringify(all), skipped: 0, skip_reason: null });
+
+  // Capture-driven area dims: an L×W on a dims prompt (kitchen.dims,
+  // bath.dims, general.room_dims, …) IS the room's dimensions, so it writes
+  // through to the area row. The values stay contractor-overridable — a later
+  // measurement (or future area edit) simply wins. Never invented (Hard Rule
+  // 1): these are exactly the numbers the contractor punched in.
+  const keyTail = step.item.key.split(".").pop() ?? "";
+  if (keyTail.includes("dims") && m.dims?.length && m.dims?.width) {
+    const area = await db.areas.get(step.areaId);
+    if (area) {
+      await db.areas.put({
+        ...area,
+        length_ft: m.dims.length,
+        width_ft: m.dims.width,
+        floor_sf: m.qty,
+      });
+    }
+  }
+  return saved;
 }
 
 export async function removeMeasurement(si: ScopeItem, index: number): Promise<ScopeItem> {

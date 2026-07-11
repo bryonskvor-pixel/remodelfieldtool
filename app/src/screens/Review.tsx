@@ -1,4 +1,6 @@
 import { useMemo } from "react";
+import { BlobThumb } from "../components/BlobThumb";
+import { NoteLine } from "../components/NoteLine";
 import { useWalkthroughData } from "./WalkthroughRunner";
 import { db, now } from "../db/store";
 import { buildSteps, captureFor, humanizeKey, parsedMeasurements } from "../walkthrough/engine";
@@ -82,22 +84,34 @@ export function Review({
                 const c = captureFor(s, data.scopeItems, data.photos, data.notes);
                 const m = parsedMeasurements(c.scopeItem);
                 const answer = c.scopeItem?.answer ? JSON.parse(c.scopeItem.answer) as string | string[] : null;
+                const itemPhotos = c.scopeItem
+                  ? data.photos.filter((p) => p.scope_item_id === c.scopeItem!.id)
+                  : [];
+                const itemNotes = c.scopeItem
+                  ? data.notes.filter((n) => n.parent_type === "scope_item" && n.parent_id === c.scopeItem!.id)
+                  : [];
                 return (
-                  <p key={s.item.key} className="review-line">
-                    <strong>{humanizeKey(s.item.key)}</strong>{" "}
-                    {c.scopeItem?.skipped ? (
-                      <span className="muted">skipped — {c.scopeItem.skip_reason}</span>
-                    ) : (
-                      <span className="muted">
-                        {[
-                          answer ? (Array.isArray(answer) ? answer.join(", ") : answer).replace(/_/g, " ") : null,
-                          m.length > 0 ? m.map((x) => `${x.qty} ${x.unit}`).join(", ") : null,
-                          c.photoCount > 0 ? `${c.photoCount} 📷` : null,
-                          c.noteCount > 0 ? `${c.noteCount} note(s)` : null,
-                        ].filter(Boolean).join(" · ") || "—"}
-                      </span>
+                  <div key={s.item.key} className="review-line">
+                    <p>
+                      <strong>{humanizeKey(s.item.key)}</strong>{" "}
+                      {c.scopeItem?.skipped ? (
+                        <span className="muted">skipped — {c.scopeItem.skip_reason}</span>
+                      ) : (
+                        <span className="muted">
+                          {[
+                            answer ? (Array.isArray(answer) ? answer.join(", ") : answer).replace(/_/g, " ") : null,
+                            m.length > 0 ? m.map((x) => `${x.qty} ${x.unit}`).join(", ") : null,
+                          ].filter(Boolean).join(" · ") || (itemPhotos.length + itemNotes.length > 0 ? "" : "—")}
+                        </span>
+                      )}
+                    </p>
+                    {!c.scopeItem?.skipped && itemPhotos.length > 0 && (
+                      <div className="thumb-row">
+                        {itemPhotos.map((p) => <BlobThumb key={p.id} id={p.id} />)}
+                      </div>
                     )}
-                  </p>
+                    {!c.scopeItem?.skipped && itemNotes.map((n) => <NoteLine key={n.id} note={n} />)}
+                  </div>
                 );
               })}
             </div>

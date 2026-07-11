@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BlobThumb } from "../components/BlobThumb";
+import { NoteLine } from "../components/NoteLine";
 import { MeasurementPad } from "../components/MeasurementPad";
 import { PhotoCapture } from "../components/PhotoCapture";
 import { VoiceNote } from "../components/VoiceNote";
@@ -121,11 +122,7 @@ export function PromptScreen({
               <button className="inline-x" onClick={() => scopeItem && void removeMeasurement(scopeItem, i)}>✕</button>
             </p>
           ))}
-          {notes.map((n) => (
-            <p key={n.id} className="captured-line">
-              {n.type === "voice" ? `🎤 Voice note (${n.duration_sec}s) — transcribes on sync` : `⌨️ ${n.transcript}`}
-            </p>
-          ))}
+          {notes.map((n) => <NoteLine key={n.id} note={n} />)}
         </div>
       )}
 

@@ -1,14 +1,17 @@
-// Sync engine: pushes dirty rows to POST /api/sync when online, pulls the
-// bootstrap payload (contractor, templates, recent projects) into the cache.
-// Capture never waits on this (Hard Rule 2/3) — it runs opportunistically:
-// on app start, on the browser 'online' event, and debounced after writes.
-// Photo/audio blobs stay local this phase; R2 upload is the next session.
+// Sync engine: pushes dirty rows to POST /api/sync when online, uploads
+// pending photo/audio blobs to R2 (via the server), and pulls the bootstrap
+// payload — including walkthrough child rows from other devices — into the
+// local store. Capture never waits on this (Hard Rule 2/3) — it runs
+// opportunistically: on app start, on the browser 'online' event, and
+// debounced after writes.
 
 import { ENTITY_STORES, type EntityStore } from "./idb";
 import {
-  cacheContractor, cacheTemplates, dirtyRows, kvGet, kvSet, markClean, onStoreChange,
+  cacheContractor, cacheTemplates, db, dirtyRows, kvGet, kvSet, markClean,
+  notifyStoreChange, onStoreChange, putServer, type Synced,
 } from "./store";
-import type { Contractor, Template } from "../types";
+import { uploadPendingMedia, watchTranscript } from "./media";
+import type { Contractor, Note, Template } from "../types";
 
 export type SyncState = {
   online: boolean;
@@ -42,7 +45,16 @@ function setState(patch: Partial<SyncState>) {
 
 async function refreshPending(): Promise<void> {
   const dirty = await dirtyRows();
-  setState({ pending: Object.values(dirty).reduce((n, rows) => n + rows.length, 0) });
+  let pending = Object.values(dirty).reduce((n, rows) => n + rows.length, 0);
+  // Media blobs owed to R2 count as pending too — a clean row whose photo
+  // bytes haven't left the phone isn't "synced" from the field's perspective.
+  for (const p of await db.photos.all()) {
+    if (p.sync_status !== "synced" && !(p as Synced<typeof p>)._dirty) pending += 1;
+  }
+  for (const n of await db.notes.all()) {
+    if (n.type === "voice" && n.sync_status !== "synced" && !(n as Synced<typeof n>)._dirty) pending += 1;
+  }
+  setState({ pending });
 }
 
 let syncQueued = false;
@@ -93,6 +105,14 @@ export async function syncNow(): Promise<void> {
         setState({ lastError: `${result.rejected.length} row(s) rejected by server` });
       }
     }
+    // Rows are pushed; now move pending photo/audio blobs into R2. Failures
+    // just stay owed and retry on the next pass.
+    const owed = await uploadPendingMedia();
+    if (owed > 0) console.warn(`[sync] ${owed} media upload(s) still pending`);
+    // Voice notes whose transcript hasn't landed yet: watch for it briefly.
+    for (const n of (await db.notes.all()) as Synced<Note>[]) {
+      if (n.type === "voice" && n.audio_r2_key && !n.transcript && !n._dirty) watchTranscript(n.id);
+    }
     setState({ lastSyncedAt: new Date().toISOString() });
   } catch (e) {
     setState({ lastError: e instanceof Error ? e.message : "sync failed" });
@@ -106,7 +126,12 @@ export async function syncNow(): Promise<void> {
   }
 }
 
-/** Pull contractor + templates + recent projects into the offline cache. */
+/**
+ * Pull contractor + templates + entity rows into the offline store. Entity
+ * rows merge last-write-wins with local edits (dirty local rows always win) —
+ * this is how a second device renders walkthroughs it never captured, and how
+ * server-written transcripts reach every device.
+ */
 export async function pullBootstrap(): Promise<Contractor | null> {
   try {
     const res = await fetch("/api/bootstrap", { credentials: "include" });
@@ -115,11 +140,19 @@ export async function pullBootstrap(): Promise<Contractor | null> {
     const data = (await res.json()) as {
       contractor: Contractor;
       templates: { project_type: string; checklist_json: string }[];
-      projects: Record<string, unknown>[];
-      walkthroughs: Record<string, unknown>[];
-    };
+    } & Partial<Record<EntityStore, Record<string, unknown>[]>>;
     await cacheContractor(data.contractor);
     await cacheTemplates(data.templates.map((t) => JSON.parse(t.checklist_json) as Template));
+    let merged = 0;
+    for (const store of ENTITY_STORES) {
+      for (const row of data[store] ?? []) {
+        // Strip server-only contractor_id: client rows never carry it (Hard Rule 7).
+        const { contractor_id, ...clientRow } = row;
+        void contractor_id;
+        if (await putServer(store, clientRow)) merged += 1;
+      }
+    }
+    if (merged > 0) notifyStoreChange();
     await kvSet("bootstrap_at", new Date().toISOString());
     return data.contractor;
   } catch {

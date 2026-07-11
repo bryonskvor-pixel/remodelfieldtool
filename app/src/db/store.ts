@@ -9,7 +9,14 @@ import type { Area, Contractor, Note, Photo, Project, ScopeItem, Template, Walkt
 export type Synced<T> = T & { _dirty?: 0 | 1 };
 
 export function newId(): string {
-  return crypto.randomUUID();
+  // crypto.randomUUID only exists in secure contexts (HTTPS/localhost);
+  // phone testing over LAN HTTP needs the getRandomValues fallback.
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6]! & 0x0f) | 0x40; // version 4
+  bytes[8] = (bytes[8]! & 0x3f) | 0x80; // variant
+  const hex = [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
 export function now(): string {
@@ -24,6 +31,20 @@ export async function put<T extends { id: string; updated_at?: string }>(
   await idbPut(store, stamped);
   notifyChange();
   return stamped;
+}
+
+/**
+ * Merge a server-pulled row into the local store (LWW, §3): a locally-dirty
+ * row always wins (its edit pushes on the next sync), otherwise the newer
+ * updated_at wins. Written rows are clean — pulls never re-enter the queue.
+ */
+export async function putServer(store: EntityStore, row: Record<string, unknown>): Promise<boolean> {
+  if (typeof row.id !== "string") return false;
+  const local = await idbGet<{ updated_at?: string; _dirty?: 0 | 1 }>(store, row.id);
+  if (local?._dirty) return false;
+  if (local?.updated_at && typeof row.updated_at === "string" && row.updated_at < local.updated_at) return false;
+  await idbPut(store, { ...row, _dirty: 0 as const });
+  return true;
 }
 
 export async function get<T>(store: EntityStore, id: string): Promise<T | undefined> {
@@ -146,4 +167,9 @@ export function onStoreChange(fn: Listener): () => void {
 
 function notifyChange() {
   for (const fn of listeners) fn();
+}
+
+/** For batch server pulls: one notification after many putServer calls. */
+export function notifyStoreChange(): void {
+  notifyChange();
 }

@@ -236,6 +236,21 @@ button.inline-link {
   background: var(--surface);
 }
 
+/* Transcript text doubles as its own edit button (tap to edit). */
+button.transcript {
+  width: auto;
+  min-height: 0;
+  display: inline;
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: inherit;
+  text-align: left;
+  cursor: text;
+}
+
 .skip-banner {
   color: var(--accent);
 }
