@@ -61,8 +61,13 @@ Room-shape sketch mode (2026-07-11): third measurement-pad mode
 with confirmed closure suggestions (Hard Rule 1), floor SF/wall LF,
 `areas.floor_sf` write-through; geometry in `app/src/walkthrough/sketch.ts`
 (unit-tested). Verified in an automated browser run.
-Remaining for Phase 1: photo annotation, GPS-at-start, Bryon's real-phone
-run; then Phase 2 (bid sheet + proposal).
+Photo annotation + GPS-at-start (2026-07-11): tap a photo thumb → full-screen
+annotator (drag arrows/circles, vector JSON in `photos.annotation_data`,
+✏️ badge); walkthrough start fills `gps_lat/lng` best-effort, never blocking.
+Media-upload write-backs now patch the current row (stale-snapshot clobber
+fixed in `app/src/db/media.ts`).
+Remaining for Phase 1: Bryon's real-phone run; then Phase 2 (bid sheet +
+proposal).
 
 ## Out of scope (v1 — see §12)
 

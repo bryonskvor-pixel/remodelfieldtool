@@ -3,7 +3,7 @@
 // from capture's point of view (Hard Rule 3): this runs inside the background
 // sync pass, and anything that fails just retries on the next pass.
 
-import { idbPut } from "./idb";
+import { idbGet, idbPut } from "./idb";
 import { db, getBlob, notifyStoreChange, type Synced } from "./store";
 import type { Note, Photo } from "../types";
 
@@ -27,10 +27,20 @@ export async function makeThumb(blob: Blob): Promise<Blob | null> {
   }
 }
 
-/** Clean local write of upload results — must NOT re-enter the dirty queue
- * (the server already holds these values; row sync would just echo them). */
-async function putUploadResult(store: "photos" | "notes", row: Record<string, unknown>): Promise<void> {
-  await idbPut(store, { ...row, _dirty: 0 });
+/** Write upload results onto the CURRENT row, not the snapshot the upload
+ * started from — the contractor may have annotated/edited the row while the
+ * bytes were in flight, and a stale spread would clobber that edit AND clear
+ * its dirty flag. Only the media fields are patched; the row's own dirty
+ * state is preserved (clean rows stay out of the queue — the server already
+ * holds these values). */
+async function putUploadResult(
+  store: "photos" | "notes",
+  id: string,
+  patch: Record<string, unknown>,
+): Promise<void> {
+  const cur = await idbGet<Record<string, unknown> & { _dirty?: 0 | 1 }>(store, id);
+  if (!cur) return;
+  await idbPut(store, { ...cur, ...patch, _dirty: cur._dirty ?? 0 });
   notifyStoreChange();
 }
 
@@ -48,8 +58,8 @@ async function uploadPhoto(photo: Synced<Photo>): Promise<void> {
   });
   if (!res.ok) throw new Error(`photo upload HTTP ${res.status}`);
   const data = (await res.json()) as { r2_key: string; thumbnail_key: string | null };
-  await putUploadResult("photos", {
-    ...photo, r2_key: data.r2_key, thumbnail_key: data.thumbnail_key, sync_status: "synced",
+  await putUploadResult("photos", photo.id, {
+    r2_key: data.r2_key, thumbnail_key: data.thumbnail_key, sync_status: "synced",
   });
 }
 
@@ -64,7 +74,7 @@ async function uploadAudio(note: Synced<Note>): Promise<void> {
   });
   if (!res.ok) throw new Error(`audio upload HTTP ${res.status}`);
   const data = (await res.json()) as { audio_r2_key: string };
-  await putUploadResult("notes", { ...note, audio_r2_key: data.audio_r2_key, sync_status: "synced" });
+  await putUploadResult("notes", note.id, { audio_r2_key: data.audio_r2_key, sync_status: "synced" });
   watchTranscript(note.id);
 }
 
@@ -84,7 +94,7 @@ export async function uploadPendingMedia(): Promise<number> {
       await uploadPhoto(p);
     } catch (e) {
       remaining += 1;
-      await putUploadResult("photos", { ...p, sync_status: "failed" });
+      await putUploadResult("photos", p.id, { sync_status: "failed" });
       console.warn(`[media] photo ${p.id} upload failed, will retry`, e);
     }
   }
@@ -96,7 +106,7 @@ export async function uploadPendingMedia(): Promise<number> {
       await uploadAudio(n);
     } catch (e) {
       remaining += 1;
-      await putUploadResult("notes", { ...n, sync_status: "failed" });
+      await putUploadResult("notes", n.id, { sync_status: "failed" });
       console.warn(`[media] audio ${n.id} upload failed, will retry`, e);
     }
   }

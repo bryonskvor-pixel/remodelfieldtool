@@ -392,6 +392,93 @@ button.key {
   stroke-width: 1.5;
 }
 
+/* Photo annotation (§11) */
+
+.annotator {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  flex-direction: column;
+}
+
+.annotator-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+
+.annotator-frame {
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.annotator-frame img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100dvh - 140px);
+  width: auto;
+  height: auto;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.annotator-frame svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none; /* drags draw; don't scroll */
+  cursor: crosshair;
+}
+
+.annotation-stroke,
+.annotation-stroke line,
+.annotation-stroke polyline {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.annotator-bar {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  overflow-x: auto;
+}
+
+/* Annotated-photo badge on thumbnails */
+
+button.thumb-btn {
+  position: relative;
+  width: auto;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  flex-shrink: 0;
+}
+
+.thumb-badge {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  background: var(--accent);
+  color: #111;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  padding: 1px 4px;
+  pointer-events: none;
+}
+
 /* Runner chrome */
 
 .runner-header {

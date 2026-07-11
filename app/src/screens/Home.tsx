@@ -57,6 +57,28 @@ export function Home({
     };
     await db.walkthroughs.put(walkthrough);
 
+    // GPS-at-start (§4.2, contractor-visible only): best-effort and strictly
+    // fire-and-forget — the walkthrough starts NOW, with or without a fix
+    // (Hard Rule 3). GPS works offline; it needs a secure context like the
+    // camera does, so LAN-HTTP dev just silently skips it.
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          void db.walkthroughs.get(walkthrough.id).then((wt) => {
+            if (wt && wt.gps_lat === null) {
+              void db.walkthroughs.put({
+                ...wt,
+                gps_lat: pos.coords.latitude,
+                gps_lng: pos.coords.longitude,
+              });
+            }
+          });
+        },
+        () => {},
+        { timeout: 10_000, maximumAge: 300_000 },
+      );
+    }
+
     // Universal block runs first on every project type (§6.0); it gets an
     // implicit area, then the primary project-type area.
     await db.areas.put({

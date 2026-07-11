@@ -1,6 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { BlobThumb } from "../components/BlobThumb";
 import { FloorPlanThumb } from "../components/FloorPlanThumb";
+import { PhotoAnnotator } from "../components/PhotoAnnotator";
+import type { Photo } from "../types";
 import { NoteLine } from "../components/NoteLine";
 import { useWalkthroughData } from "./WalkthroughRunner";
 import { db, now } from "../db/store";
@@ -18,6 +20,7 @@ export function Review({
   onDone: () => void;
 }) {
   const data = useWalkthroughData(walkthroughId);
+  const [annotating, setAnnotating] = useState<Photo | null>(null);
 
   const steps = useMemo(
     () => (data ? buildSteps(data.areas, data.templates, data.scopeItems) : []),
@@ -112,7 +115,12 @@ export function Review({
                       ))}
                     {!c.scopeItem?.skipped && itemPhotos.length > 0 && (
                       <div className="thumb-row">
-                        {itemPhotos.map((p) => <BlobThumb key={p.id} id={p.id} />)}
+                        {itemPhotos.map((p) => (
+                          <button key={p.id} className="thumb-btn" onClick={() => setAnnotating(p)}>
+                            <BlobThumb id={p.id} />
+                            {p.annotation_data && <span className="thumb-badge">✏️</span>}
+                          </button>
+                        ))}
                       </div>
                     )}
                     {!c.scopeItem?.skipped && itemNotes.map((n) => <NoteLine key={n.id} note={n} />)}
@@ -122,6 +130,10 @@ export function Review({
             </div>
           );
         })}
+
+      {annotating && (
+        <PhotoAnnotator photo={annotating} onClose={() => setAnnotating(null)} />
+      )}
 
       <button onClick={() => void complete()}>
         {complete_ ? "Update completeness score" : report.redFlags.length > 0

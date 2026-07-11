@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { BlobThumb } from "../components/BlobThumb";
 import { FloorPlanThumb } from "../components/FloorPlanThumb";
+import { PhotoAnnotator } from "../components/PhotoAnnotator";
 import { NoteLine } from "../components/NoteLine";
 import { MeasurementPad } from "../components/MeasurementPad";
 import { PhotoCapture } from "../components/PhotoCapture";
@@ -38,6 +39,7 @@ export function PromptScreen({
   const [showPad, setShowPad] = useState(false);
   const [showSkip, setShowSkip] = useState(false);
   const [noteDraft, setNoteDraft] = useState<string | null>(null);
+  const [annotating, setAnnotating] = useState<Photo | null>(null);
 
   const answer = parsedAnswer(scopeItem);
   const answers = Array.isArray(answer) ? answer : answer ? [answer] : [];
@@ -114,7 +116,12 @@ export function PromptScreen({
         <div className="captured">
           {photos.length > 0 && (
             <div className="thumb-row">
-              {photos.map((p) => <BlobThumb key={p.id} id={p.id} />)}
+              {photos.map((p) => (
+                <button key={p.id} className="thumb-btn" onClick={() => setAnnotating(p)}>
+                  <BlobThumb id={p.id} />
+                  {p.annotation_data && <span className="thumb-badge">✏️</span>}
+                </button>
+              ))}
             </div>
           )}
           {measurements.map((m, i) => (
@@ -155,6 +162,10 @@ export function PromptScreen({
           onSave={(m) => void addMeasurement(step, scopeItem, m)}
           onClose={() => setShowPad(false)}
         />
+      )}
+
+      {annotating && (
+        <PhotoAnnotator photo={annotating} onClose={() => setAnnotating(null)} />
       )}
 
       {showSkip && (
