@@ -1,5 +1,70 @@
 # Session Notes — ScopeWalk (remodelfieldtool)
 
+## 2026-07-11 (session 5) — Sketch mode + photo annotation + GPS: Phase 1 code complete
+
+**Accomplished**
+- **Room-shape sketch mode** (commit `db8774c`), per the §11 spec: third
+  measurement-pad mode `Qty | L×W | Sketch`. Tap-to-place corners on a dot
+  grid (walls snap H/V), tap the first corner to close, then each wall
+  highlights for numeric-pad entry; auto-derivable closing walls are shown as
+  "✓ Confirm N ft" — suggested, never silently written (Hard Rule 1). Misclose
+  reported in feet with Save disabled until fixed (tap any wall to re-enter).
+  Shoelace floor SF + wall LF; on `*dims*` prompts writes `areas.floor_sf`
+  (+ `wall_sf` once ceiling height known; length/width stay null — the room
+  isn't rectangular). Polygon stores as `points` in measurement JSON — syncs
+  through the existing pipeline, offline, no schema change. Floor-plan
+  thumbnails on prompt + review. Pure geometry in
+  `app/src/walkthrough/sketch.ts` (18 vitest tests). Browser-verified:
+  L-room traced, suggestions 7/12 ft confirmed, 124 SF/48 LF; misclose
+  flagged + fixed; L×W regression OK.
+- **Photo annotation** (commit `3864fba`): tap any photo thumb (prompt or
+  review) → full-screen annotator, drag-to-draw arrows/circles, Undo/Cancel/
+  Done. Vector shapes only, stored in `photos.annotation_data` as JSON with
+  units = % of image WIDTH on both axes (circles stay round on any aspect;
+  device-independent). ✏️ badge on annotated thumbs. Syncs as a row write.
+- **GPS-at-start** (same commit): walkthrough creation fires a non-blocking
+  `getCurrentPosition` filling `walkthroughs.gps_lat/lng` (Hard Rule 3 —
+  never waits; silently skipped on insecure contexts, like the camera).
+- **Bug fix — media upload stale-snapshot clobber** (`app/src/db/media.ts`):
+  upload write-backs used the pre-upload row snapshot with `_dirty: 0`, so an
+  annotation/caption/transcript edit made while bytes were in flight was
+  clobbered AND lost its dirty flag (never synced). Now re-reads the row and
+  patches only the media fields, preserving dirty state.
+- New project verify skill: `.claude/skills/verify/SKILL.md` (dev-server +
+  mint-session + Playwright recipe, IndexedDB assertions, Turso cleanup).
+- All browser runs verified with Playwright (fake geolocation + real photo
+  upload → shapes on server, badge rendered, cancel/undo/bare-tap probes
+  held). Test walkthroughs cleaned from Turso + R2 after each run.
+
+**State**
+- Phase 1 code is DONE. Both workspaces typecheck; 36 vitest tests pass.
+  Dev servers stopped. Turso holds only "Miller" (Bryon's earlier test) and
+  "Smith" (basement, created 2026-07-11 21:05Z — not by an agent session;
+  presumably Bryon's, left alone).
+- Only remaining Phase 1 item: **Bryon's real-phone offline walkthrough**
+  (the true milestone) — he's doing it next. Camera/mic/GPS need HTTPS or
+  localhost; capture/skip/measure/sketch work over LAN HTTP regardless.
+
+**Next steps**
+- Bryon: real-phone run. Then **Phase 2: bid sheet generation + price book
+  auto-suggest + proposal builder** (§8–9) in a fresh session.
+- Phase 2 reminder from earlier notes: transcripts and internal notes must
+  never render in the proposal (Hard Rule 5); annotation overlays are
+  internal too unless deliberately included on proposal photos.
+- Still parked: Ohio local-code defaults from Bradford; rotate Turso token;
+  real email provider before Phase 3.
+
+**Context**
+- Annotation coordinate space: y runs 0..100·h/w (NOT 0..100). Any future
+  renderer must draw shapes over the image with that convention
+  (`AnnotationShapes` in PhotoAnnotator.tsx is the shared renderer).
+- Sketch UX detail: the closing tap only lands when the last placed corner
+  shares an axis with the first corner (snapToAxis makes this natural).
+- During wall entry the sketch sheet is taller than a phone viewport; the
+  canvas top scrolls off. Watch on the real-phone run.
+- The sketch measurement's floor_sf write-through is latest-wins with L×W
+  (either overwrite the area row; contractor-overridable later).
+
 ## 2026-07-11 (session 4) — Phase 1 media sync: R2 + Groq transcription
 
 **Accomplished**
