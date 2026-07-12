@@ -8,8 +8,14 @@ export interface Contractor {
   business_name: string;
   owner_name: string | null;
   email: string;
+  phone: string | null;
+  license_number: string | null;
+  insurance_note: string | null;
+  address: string | null;
   default_markup_pct: number;
   default_tax_rule: string | null; // bare percent ("7.25") or JSON {"rate": n}
+  payment_schedule_default: string | null; // JSON {label, percent}[]
+  terms_boilerplate: string | null;
   proposal_expiration_days: number;
 }
 
@@ -163,6 +169,40 @@ export interface PriceBookItem {
   active: number;
   created_at: string;
   updated_at: string;
+}
+
+// ---- Proposal (Phase 2, §9) ---------------------------------------------------
+
+export type ProposalDisplayMode = "lump_sum" | "by_division" | "full_line_item";
+
+export interface Proposal {
+  id: string;
+  bid_sheet_id: string;
+  version: number;
+  display_mode: ProposalDisplayMode;
+  scope_narrative: string | null;    // AI-drafted suggestion, contractor-edited (Hard Rule 1)
+  inclusions_summary: string | null;
+  exclusions: string | null;         // JSON string[] — seeded from excluded lines + skips
+  assumptions: string | null;        // JSON string[] — seeded from yellowFlags' draftedAssumption
+  allowances_summary: string | null;
+  payment_schedule: string | null;   // JSON {label, percent}[] from contractor defaults
+  timeline_estimate: string | null;  // manual entry, ranges encouraged (§9)
+  expiration_date: string | null;    // YYYY-MM-DD
+  terms: string | null;
+  pdf_r2_key: string | null;         // server-written
+  public_token: string | null;       // minted client-side at send
+  sent_at: string | null;
+  viewed_at: string | null;          // JSON timestamps[] — SERVER-authoritative, never pushed
+  signed_at: string | null;          // server-authoritative
+  signature_data: string | null;     // server-authoritative JSON {typed_name, timestamp, ip}
+  status: "draft" | "sent" | "viewed" | "signed" | "expired" | "declined";
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaymentMilestone {
+  label: string;
+  percent: number;
 }
 
 export interface PriceHistoryEntry {

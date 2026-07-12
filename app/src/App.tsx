@@ -4,7 +4,9 @@ import { cachedContractor } from "./db/store";
 import { onSyncState, pullBootstrap, startAutoSync, syncNow, type SyncState } from "./db/sync";
 import { BidSheet } from "./screens/BidSheet";
 import { Home } from "./screens/Home";
+import { ProposalBuilder } from "./screens/ProposalBuilder";
 import { Review } from "./screens/Review";
+import { Settings } from "./screens/Settings";
 import { WalkthroughRunner } from "./screens/WalkthroughRunner";
 import type { Contractor } from "./types";
 
@@ -21,13 +23,18 @@ type Route =
   | { name: "home" }
   | { name: "walkthrough"; id: string }
   | { name: "review"; id: string }
-  | { name: "bid"; id: string };
+  | { name: "bid"; id: string }
+  | { name: "proposal"; id: string }
+  | { name: "settings" };
 
 function parseRoute(): Route {
   const m = window.location.hash.match(/^#\/wt\/([^/]+)(\/review)?$/);
   if (m && m[1]) return m[2] ? { name: "review", id: m[1] } : { name: "walkthrough", id: m[1] };
   const b = window.location.hash.match(/^#\/bid\/([^/]+)$/);
   if (b && b[1]) return { name: "bid", id: b[1] };
+  const p = window.location.hash.match(/^#\/proposal\/([^/]+)$/);
+  if (p && p[1]) return { name: "proposal", id: p[1] };
+  if (window.location.hash === "#/settings") return { name: "settings" };
   return { name: "home" };
 }
 
@@ -87,7 +94,11 @@ export function App() {
     <div>
       <SyncBadge sync={sync} />
       {route.name === "home" && (
-        <Home contractor={auth.contractor} onOpenWalkthrough={(id) => go(`#/wt/${id}`)} />
+        <Home
+          contractor={auth.contractor}
+          onOpenWalkthrough={(id) => go(`#/wt/${id}`)}
+          onSettings={() => go("#/settings")}
+        />
       )}
       {route.name === "walkthrough" && (
         <WalkthroughRunner
@@ -105,7 +116,25 @@ export function App() {
         />
       )}
       {route.name === "bid" && (
-        <BidSheet bidSheetId={route.id} onBack={() => window.history.back()} />
+        <BidSheet
+          bidSheetId={route.id}
+          onBack={() => window.history.back()}
+          onProposal={(proposalId) => go(`#/proposal/${proposalId}`)}
+        />
+      )}
+      {route.name === "proposal" && (
+        <ProposalBuilder
+          proposalId={route.id}
+          onBack={() => window.history.back()}
+          onOpenProposal={(id) => go(`#/proposal/${id}`)}
+        />
+      )}
+      {route.name === "settings" && (
+        <Settings
+          contractor={auth.contractor}
+          onSaved={(c) => setAuth({ phase: "signed_in", contractor: c })}
+          onBack={() => go("")}
+        />
       )}
     </div>
   );

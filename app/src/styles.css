@@ -727,3 +727,20 @@ input.bid-markup-input {
 button.secondary.bid-delete {
   color: var(--danger);
 }
+
+/* ---- Proposal builder (Phase 2 §9) ---------------------------------------- */
+
+input.pct-input {
+  width: 72px;
+  flex: 0 0 auto;
+}
+
+.proposal-link {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  word-break: break-all;
+  background: #171c22;
+  border: 1px solid #2c333c;
+  border-radius: 6px;
+  padding: 8px 10px;
+}

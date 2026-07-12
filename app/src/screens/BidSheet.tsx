@@ -4,6 +4,7 @@ import {
   computeTotals, divisionLabel, divisionRank, lineExtended, DIVISION_ORDER,
 } from "../bid/bidgen";
 import { recordPrice, suggestPrice } from "../bid/pricebook";
+import { getOrCreateProposal } from "../proposal/create";
 import { newId, now } from "../db/store";
 import type { BidSheet as BidSheetRow, Contractor, LineItem, PriceBookItem, Project } from "../types";
 
@@ -101,13 +102,15 @@ function money(n: number | null): string {
 }
 
 export function BidSheet({
-  bidSheetId, onBack,
+  bidSheetId, onBack, onProposal,
 }: {
   bidSheetId: string;
   onBack: () => void;
+  onProposal: (proposalId: string) => void;
 }) {
   const data = useBidData(bidSheetId);
   const [sheetLine, setSheetLine] = useState<LineItem | null>(null);
+  const [creatingProposal, setCreatingProposal] = useState(false);
 
   const totals = useMemo(() => {
     if (!data) return null;
@@ -259,6 +262,18 @@ export function BidSheet({
           onMarkup={(pct) => void db.bid_sheets.put({ ...sheet, markup_pct: pct ?? 0 })}
         />
       )}
+
+      <button
+        disabled={creatingProposal}
+        onClick={() => {
+          setCreatingProposal(true);
+          void getOrCreateProposal(sheet.id)
+            .then(onProposal)
+            .finally(() => setCreatingProposal(false));
+        }}
+      >
+        {creatingProposal ? "Opening…" : "Customer proposal →"}
+      </button>
 
       {sheetLine && (
         <LineActionsSheet

@@ -28,4 +28,20 @@ export const api = {
     json<{ contractor: Contractor }>(
       await fetch("/api/me", { credentials: "include" }),
     ),
+  // Profile editing is online-only by design (not a field-capture flow).
+  patchMe: async (patch: Partial<Contractor>) =>
+    json<{ contractor: Contractor }>(
+      await fetch("/api/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(patch),
+      }),
+    ),
+  // Scope-narrative draft (§9): returns a suggestion the contractor edits
+  // before send (Hard Rule 1). Requires the proposal row to be synced.
+  draftNarrative: async (proposalId: string) =>
+    json<{ narrative: string }>(
+      await post(`/api/proposals/${proposalId}/narrative`, {}),
+    ),
 };

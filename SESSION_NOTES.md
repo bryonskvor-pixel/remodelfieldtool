@@ -1,5 +1,95 @@
 # Session Notes — ScopeWalk (remodelfieldtool)
 
+## 2026-07-11 (session 7) — Phase 2 slice 2: proposal builder — Phase 2 code complete
+
+**Accomplished**
+- **Proposal data + sync**: migration 0005 (`proposals.timeline_estimate`;
+  updated_at came in 0003), IndexedDB v3 with a `proposals` store, sync
+  COLUMNS + bid-sheet parent check + bootstrap pull. `viewed_at`/`signed_at`/
+  `signature_data`/`pdf_r2_key` are deliberately NOT client-writable (server
+  writes them; a stale device can never clobber a signature) and signed rows
+  are immutable via sync (`UPDATE_GUARDS` in `server/src/sync.ts`) — edits
+  after signing belong on a new version.
+- **Creation/seeding** (`app/src/proposal/seed.ts` pure + tests, `create.ts`
+  orchestration): exclusions from excluded-display lines, assumptions from
+  completeness yellow-flag `draftedAssumption`s, allowances summary (amounts
+  only when contractor entered qty+price — Hard Rule 1), payment schedule /
+  terms / expiration-days from contractor defaults (30/40/30 fallback).
+- **Hard Rule 5 enforcement point**: `server/src/proposal/customer.ts` builds
+  the ONLY DTO the customer ever sees (whitelist, field-by-field; vitest
+  sentinel-leak tests in `customer.test.ts` — server workspace now has vitest).
+  Markup, internal_note, cost_breakdown, transcripts, GPS, signer IP can't
+  render. Customer prices are **markup-distributed** (scaled to sum to the
+  bid total; largest division absorbs rounding residue) because raw prices
+  next to the marked-up total would expose markup by subtraction.
+- **One renderer** (`server/src/proposal/render.ts`): public page, contractor
+  preview (`GET /api/proposals/:id/preview`, banner, no signing), and PDF all
+  print the same HTML. PDF = playwright-core Chromium `page.pdf` with
+  fallback channels msedge/chrome (works on the Windows pilot box with no
+  browser download), lazy singleton, stored to R2, graceful 503.
+- **Public link** `/p/:token` (intake-pattern, unauthenticated): resolves ANY
+  version's token to the latest sent version (§9 "customer link always shows
+  latest"), appends `viewed_at` + flips sent→viewed, lazy-expires past
+  `expiration_date`, typed-name sign endpoint (name+timestamp+IP; status
+  IN sent/viewed guard → concurrent double-sign gets 409).
+- **AI narrative** (`POST /api/proposals/:id/narrative`): Claude API via
+  official SDK, model `claude-opus-4-8`, adaptive thinking. Server returns a
+  SUGGESTION (never writes the row); prompt gets structured captured answers
+  + bid line descriptions only — no transcripts/internal notes, and it's
+  instructed to never invent work. 503 when `ANTHROPIC_API_KEY` unset
+  (placeholder added to .env/.env.example — **Bryon: paste a real key**).
+- **UI**: `ProposalBuilder` (`#/proposal/:id`, wide layout) — display-mode
+  chips, narrative editor + "Draft with AI", one-per-line exclusions/
+  assumptions editors, payment-schedule rows, timeline/expiration/terms,
+  customer preview, send (mints 48-hex token client-side, link + copy),
+  status card (views, signature), "Make changes (creates v2)" hidden once
+  signed. `Settings` (`#/settings`, from Home): business identity, markup,
+  tax rule, payment schedule default, expiration days, terms →
+  `PATCH /api/me` (online-only) + cached-contractor update. Bid screen got
+  "Customer proposal →". Vite now proxies `/p` too.
+- **Verified**: 92 unit tests (84 app + 8 server) + automated Playwright run,
+  33/34 checks (the 34th — AI-draft graceful error — failed only as a test
+  race and was verified by direct probe: 503 "not configured"): seeding,
+  preview leak checks, send, anonymous view + tracking, v2 clone carrying
+  edits, old-token→latest resolution, sign + 409 double-sign + contractor
+  sees signature, PDF (200/pdf/45KB+), settings round-trip with profile
+  restore. Turso rows inspected: v1 viewed/superseded, v2 signed by "Jane
+  Verify", sig IP recorded (never rendered), pdf_r2_key set.
+
+**State**
+- Phase 2 CODE COMPLETE. Working tree has the full slice (bid-sheet slice
+  commit 76c53a3 + this, uncommitted). Migration 0005 applied to Turso.
+- Test rows cleaned from Turso after verification (cleanup-walkthrough.ts now
+  also removes proposals + their R2 PDFs).
+- Machine note: ~17 orphaned dev-server node processes had accumulated across
+  the day's sessions and exhausted commit memory (node couldn't even start);
+  killed them. Watch for this — each editor/extension restart orphans a pair.
+
+**Next steps**
+- **Milestone: one real bid sent to one real customer** (Bryon/Bradford).
+  Needs: real `ANTHROPIC_API_KEY` in .env if AI drafts are wanted (optional);
+  fill Settings (tax rule, terms, payment schedule) before first send.
+- Then Phase 3 (§13): remaining project types from field feedback, real
+  website intake + lead flow, bid-to-actual reconciliation.
+- Still parked: Ohio local-code defaults from Bradford; rotate Turso token;
+  real email provider before Phase 3.
+
+**Context**
+- Embedded-replica gotcha (bit this session twice): a session minted by
+  `mint-session.ts` is NOT immediately visible to an already-running server —
+  each process has its own replica and the running one pulls on a 60s
+  interval (sometimes longer). If a fresh token 401s, restart the dev server
+  or wait; don't debug auth.
+- The narrative endpoint requires the proposal row to be SYNCED (server
+  drafts from server data) — the app calls `syncNow()` before drafting and
+  before preview.
+- Customer-price math: division subtotal = Σ(qty×price)×(1+markup%)/…, scaled
+  numbers are what the customer sees everywhere (options too); bid_sheet's
+  persisted subtotal/markup_amount/tax/total are the source of truth.
+- `server/scripts/check-schema.ts` is a new dev helper (schema + applied
+  migrations). `_check-session.ts`/`_verify-turso.ts` were session-temporary
+  and deleted.
+
 ## 2026-07-11 (session 6) — Phase 2 slice 1: bid sheet + price book + margin
 
 **Accomplished**

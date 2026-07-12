@@ -20,6 +20,7 @@ export interface SyncBatch {
   price_book_items?: Row[];
   bid_sheets?: Row[];
   line_items?: Row[];
+  proposals?: Row[];
 }
 
 export interface SyncResult {
@@ -70,6 +71,24 @@ const COLUMNS: Record<string, string[]> = {
     "allowance_note", "is_optional", "is_excluded_display", "internal_note",
     "cost_breakdown", "deleted", "sort_order", "created_at", "updated_at",
   ],
+  // Hard Rule 5 / integrity note: viewed_at, signed_at, signature_data and
+  // pdf_r2_key are deliberately ABSENT — they are server-written (public view
+  // + sign endpoints), and a stale device's push must never clobber a
+  // customer's signature.
+  proposals: [
+    "id", "bid_sheet_id", "version", "display_mode", "scope_narrative",
+    "inclusions_summary", "exclusions", "assumptions", "allowances_summary",
+    "payment_schedule", "timeline_estimate", "expiration_date", "terms",
+    "public_token", "sent_at", "status", "created_at", "updated_at",
+  ],
+};
+
+// Extra per-table upsert guards, appended to the ON CONFLICT WHERE clause.
+// A signed proposal row is immutable via sync: any edit after signing belongs
+// on a NEW version row (§9 versioning), and a stale device must never
+// overwrite a customer's signed state.
+const UPDATE_GUARDS: Record<string, string> = {
+  proposals: "AND proposals.status != 'signed'",
 };
 
 /** Returns the subset of `ids` that exist in `table` AND belong to `contractorId`. */
@@ -108,7 +127,8 @@ async function upsert(
           VALUES (${insertCols.map(() => "?").join(", ")})
           ON CONFLICT(id) DO UPDATE SET ${updates}
           WHERE ${table}.contractor_id = excluded.contractor_id
-            AND (${table}.updated_at IS NULL OR excluded.updated_at >= ${table}.updated_at)`,
+            AND (${table}.updated_at IS NULL OR excluded.updated_at >= ${table}.updated_at)
+            ${UPDATE_GUARDS[table] ?? ""}`,
     args: values,
   });
 }
@@ -212,6 +232,8 @@ export async function applySyncBatch(batch: SyncBatch, contractorId: string): Pr
     lines = await filterByParent("line_items", lines, "price_book_items", "price_book_item_id", false);
     await apply("line_items", lines);
   }
+
+  await apply("proposals", await filterByParent("proposals", take("proposals"), "bid_sheets", "bid_sheet_id", true));
 
   return { applied, rejected };
 }

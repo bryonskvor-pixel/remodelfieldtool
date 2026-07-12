@@ -418,6 +418,43 @@ run (24/24 checks: generation, HR1 qty rules, GC seeds/dedupe, price book
 round-trip + suggestion, allowance, regen preservation, Turso sync, desktop
 layout).
 
+*Status 2026-07-11 (later session): proposal-builder slice built and verified —
+Phase 2 code complete.* Proposal builder (§9): "Customer proposal" on the bid
+screen finds-or-creates the working draft. Seeding (all suggestions, Hard
+Rule 1): exclusions from excluded-display lines, assumptions from the
+completeness engine's yellow-flag drafted assumptions, allowances summary from
+allowance lines, payment schedule / terms / expiration from contractor
+defaults (new Settings screen + `PATCH /api/me` edits those, incl. tax rule).
+Display modes lump sum / by division / full line item (default by division).
+Scope narrative drafts server-side via the Claude API (`claude-opus-4-8`,
+`POST /api/proposals/:id/narrative`, `ANTHROPIC_API_KEY` in root .env) —
+returned as a suggestion into the editor, never written to the row by the
+server; structured captured answers only, transcripts/internal notes never
+reach the model. Customer output goes through a server-side whitelist DTO
+(`server/src/proposal/customer.ts` — THE Hard Rule 5 enforcement point, with
+vitest leak tests): markup/cost_breakdown/internal_note/transcripts/GPS/signer
+IP can never render; deleted lines nowhere; excluded-display lines under
+Exclusions unpriced; add-alternates as a separate priced Options section.
+Customer-visible prices are markup-DISTRIBUTED (scaled so divisions/lines sum
+to the bid total — raw prices next to a marked-up total would expose the
+markup by subtraction). One HTML renderer serves the public page, the
+contractor preview, and the PDF (Playwright/Chromium `page.pdf`, system
+Edge/Chrome fallback channel, stored to R2). Public link `/p/:token` follows
+the intake pattern (unauthenticated): view tracking appends `viewed_at` and
+flips sent→viewed, typed-name signature records name+timestamp+IP
+(status-guarded against double-sign), lazy expiration from `expiration_date`.
+Versioning: editing after send clones to v(n+1) draft; ANY version's token
+resolves to the latest sent version. Proposals are full offline-sync citizens
+(IndexedDB v3, sync COLUMNS, bootstrap) EXCEPT `viewed_at` / `signed_at` /
+`signature_data` / `pdf_r2_key`, which are server-authoritative and never
+client-writable, and signed rows are immutable via sync. Verified end-to-end
+in an automated browser run (33/34 checks + a direct probe for the 34th, a
+test-script race): seeds, preview, send, anonymous view, v2 resolve-forward,
+sign, double-sign 409, PDF bytes, settings round-trip, Turso rows.
+**Remaining for the Phase 2 milestone: one real bid sent to one real
+customer** (needs `ANTHROPIC_API_KEY` for AI drafts — optional — and Bryon's
+real send).
+
 **Phase 3 — Loop closure**
 Remaining four project types refined from field feedback, real website intake form + lead flow (replacing the current email-only intake), optional Airtable mirror if a contractor wants it, bid-to-actual reconciliation (log actual costs per line, show variance, feed price book intelligence: "you've underpriced tile labor on 4 of your last 5 jobs by an average of 18%").
 

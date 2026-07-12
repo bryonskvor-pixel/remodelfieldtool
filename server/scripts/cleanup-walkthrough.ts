@@ -57,6 +57,16 @@ const bsIds = (await db.execute({
   args: [projectId, contractorId],
 })).rows.map((r) => String(r.id));
 if (bsIds.length) {
+  // Proposals hang off bid sheets (and their PDFs live in R2).
+  const proposals = await db.execute({
+    sql: `SELECT id, pdf_r2_key FROM proposals WHERE bid_sheet_id IN (${bsIds.map(() => "?").join(",")}) AND contractor_id = ?`,
+    args: [...bsIds, contractorId],
+  });
+  for (const p of proposals.rows) {
+    if (p.pdf_r2_key) await r2Delete(String(p.pdf_r2_key)).catch((e) => console.warn("r2 delete failed:", p.pdf_r2_key, e));
+  }
+  await del(`DELETE FROM proposals WHERE bid_sheet_id IN (${bsIds.map(() => "?").join(",")}) AND contractor_id = ?`,
+    [...bsIds, contractorId]);
   await del(`DELETE FROM line_items WHERE bid_sheet_id IN (${bsIds.map(() => "?").join(",")}) AND contractor_id = ?`,
     [...bsIds, contractorId]);
   await del(`DELETE FROM bid_sheets WHERE id IN (${bsIds.map(() => "?").join(",")}) AND contractor_id = ?`,

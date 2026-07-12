@@ -7,6 +7,7 @@ import { migrate } from "./migrate.js";
 import { requestMagicLink, requireSession, verifyMagicLink } from "./auth.js";
 import { applySyncBatch, type SyncBatch } from "./sync.js";
 import { media } from "./media.js";
+import { proposalPublic, proposalsApi } from "./proposals.js";
 import { recoverPendingTranscriptions } from "./transcribe.js";
 
 type Env = { Variables: { contractorId: string } };
@@ -39,14 +40,53 @@ app.get("/api/me", requireSession, async (c) => {
   const db = getDb();
   const result = await db.execute({
     // Hard Rule 7: contractor-scoped query filters by contractor_id.
-    sql: `SELECT id, business_name, owner_name, email, default_markup_pct,
-                 default_tax_rule, proposal_expiration_days
-          FROM contractors WHERE id = ?`,
+    sql: `SELECT ${CONTRACTOR_FIELDS} FROM contractors WHERE id = ?`,
     args: [contractorId],
   });
   const me = result.rows[0];
   if (!me) return c.json({ error: "not found" }, 404);
   return c.json({ contractor: me });
+});
+
+// Contractor profile fields the app reads (never the whole row — Turso auth
+// columns etc. stay server-side).
+const CONTRACTOR_FIELDS = `id, business_name, owner_name, email, phone,
+  license_number, insurance_note, address, default_markup_pct,
+  default_tax_rule, payment_schedule_default, terms_boilerplate,
+  proposal_expiration_days`;
+
+// Profile editing (Phase 2 §9: the proposal consumes these defaults).
+// Online-only by design — profile edits aren't a field-capture flow.
+const PROFILE_EDITABLE = [
+  "business_name", "owner_name", "phone", "license_number", "insurance_note",
+  "address", "default_markup_pct", "default_tax_rule",
+  "payment_schedule_default", "terms_boilerplate", "proposal_expiration_days",
+] as const;
+
+app.patch("/api/me", requireSession, async (c) => {
+  const contractorId = c.get("contractorId");
+  const body = await c.req.json<Record<string, unknown>>().catch(() => null);
+  if (!body) return c.json({ error: "invalid body" }, 400);
+  const sets: string[] = [];
+  const args: unknown[] = [];
+  for (const col of PROFILE_EDITABLE) {
+    if (body[col] !== undefined) {
+      sets.push(`${col} = ?`);
+      args.push(body[col] === "" ? null : body[col]);
+    }
+  }
+  if (sets.length === 0) return c.json({ error: "no editable fields in body" }, 400);
+  const db = getDb();
+  await db.execute({
+    // Hard Rule 7: contractor_id in the WHERE.
+    sql: `UPDATE contractors SET ${sets.join(", ")} WHERE id = ?`,
+    args: [...args, contractorId] as never[],
+  });
+  const result = await db.execute({
+    sql: `SELECT ${CONTRACTOR_FIELDS} FROM contractors WHERE id = ?`,
+    args: [contractorId],
+  });
+  return c.json({ contractor: result.rows[0] });
 });
 
 // ---- Website intake (§10, §14.4: his site's form POSTs here) ---------------
@@ -121,9 +161,7 @@ app.get("/api/bootstrap", requireSession, async (c) => {
   const db = getDb();
   // Hard Rule 7: every query below filters by contractor_id.
   const contractor = await db.execute({
-    sql: `SELECT id, business_name, owner_name, email, default_markup_pct,
-                 default_tax_rule, proposal_expiration_days
-          FROM contractors WHERE id = ?`,
+    sql: `SELECT ${CONTRACTOR_FIELDS} FROM contractors WHERE id = ?`,
     args: [contractorId],
   });
   const templates = await db.execute({
@@ -160,9 +198,9 @@ app.get("/api/bootstrap", requireSession, async (c) => {
       sql: `SELECT * FROM ${table} WHERE contractor_id = ?`,
       args: [contractorId],
     });
-  const [areas, scopeItems, photos, notes, priceBook, bidSheets, lineItems] = await Promise.all([
+  const [areas, scopeItems, photos, notes, priceBook, bidSheets, lineItems, proposals] = await Promise.all([
     pull("areas"), pull("scope_items"), pull("photos"), pull("notes"),
-    pull("price_book_items"), pull("bid_sheets"), pull("line_items"),
+    pull("price_book_items"), pull("bid_sheets"), pull("line_items"), pull("proposals"),
   ]);
   return c.json({
     contractor: contractor.rows[0],
@@ -177,11 +215,17 @@ app.get("/api/bootstrap", requireSession, async (c) => {
     price_book_items: priceBook.rows,
     bid_sheets: bidSheets.rows,
     line_items: lineItems.rows,
+    proposals: proposals.rows,
   });
 });
 
 // Media upload/download + transcript poll (Phase 1 R2/Groq slice).
 app.route("/api/media", media);
+
+// Proposals (§9): contractor preview + AI narrative draft (session-gated),
+// and the tokenized public customer link (view/sign/pdf, unauthenticated).
+app.route("/api/proposals", proposalsApi);
+app.route("/p", proposalPublic);
 
 // Batch upsert from the app's offline store. contractor_id comes from the
 // session inside applySyncBatch, never from the payload (Hard Rule 7).

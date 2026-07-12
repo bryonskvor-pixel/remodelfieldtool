@@ -80,10 +80,28 @@ badged). `bid_sheets`/`line_items`/`price_book_items` sync + bootstrap like
 everything else (migrations 0003/0004); the bid screen (`#/bid/:id`) is the
 first wide layout (`body.wide-page`). Pure engine in `app/src/bid/` (vitest).
 Verified in an automated browser run (24/24 checks incl. Turso sync).
-Remaining for Phase 2: proposal builder (§9) — narrative AI-draft + edit,
-tokenized public link, PDF, signature, view tracking. Hard Rule 5 is the
-crux there: transcripts, internal notes, markup, cost_breakdown never render
-to the customer.
+**Phase 2 proposal slice done (2026-07-11) — Phase 2 code complete.**
+Proposal builder (§9): "Customer proposal" on the bid screen; seeded
+exclusions (excluded lines) / assumptions (yellow-flag drafted assumptions) /
+allowances summary / payment-terms-expiration from contractor defaults (new
+Settings screen + `PATCH /api/me`); display modes lump/division/line-item;
+AI narrative via Claude API (`POST /api/proposals/:id/narrative`,
+`ANTHROPIC_API_KEY` in root .env, suggestion-only per Hard Rule 1, structured
+answers only — no transcripts). Hard Rule 5 is enforced in ONE place:
+`server/src/proposal/customer.ts` builds a whitelist DTO (vitest leak tests
+in `customer.test.ts`) — markup/internal_note/cost_breakdown/transcripts/GPS/
+signer IP never render; deleted lines nowhere; excluded lines unpriced;
+customer prices are markup-distributed so nothing is derivable by
+subtraction. One renderer (`render.ts`) serves public page `/p/:token`
+(intake-pattern unauthenticated; view tracking; typed-name sign; lazy
+expiration), contractor preview, and the Playwright/Chromium PDF (R2-stored).
+Versioning: edit-after-send clones to v(n+1); any token resolves to the
+latest sent version. Proposals sync offline like everything else (migration
+0005, IndexedDB v3) EXCEPT viewed_at/signed_at/signature_data/pdf_r2_key
+(server-authoritative, not client-writable; signed rows immutable via sync).
+Verified in an automated browser run (34 checks) + Turso row inspection.
+**Remaining for the Phase 2 milestone: one real bid sent to one real
+customer.**
 
 ## Out of scope (v1 — see §12)
 

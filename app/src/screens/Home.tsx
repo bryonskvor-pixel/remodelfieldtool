@@ -24,10 +24,11 @@ const AREA_NAMES: Record<ProjectType, string> = {
 };
 
 export function Home({
-  contractor, onOpenWalkthrough,
+  contractor, onOpenWalkthrough, onSettings,
 }: {
   contractor: Contractor;
   onOpenWalkthrough: (id: string) => void;
+  onSettings: () => void;
 }) {
   const [starting, setStarting] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -100,7 +101,11 @@ export function Home({
   return (
     <div>
       <h1>ScopeWalk</h1>
-      <p className="muted">{contractor.business_name}</p>
+      <p className="muted">
+        {contractor.business_name}
+        {" · "}
+        <button className="inline-link" onClick={onSettings}>⚙ Settings</button>
+      </p>
 
       {starting ? (
         <StartForm onStart={(t, ty) => void startWalkthrough(t, ty)} onCancel={() => setStarting(false)} />
