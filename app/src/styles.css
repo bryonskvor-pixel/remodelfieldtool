@@ -558,3 +558,172 @@ button.area-card {
   margin: 8px 0;
   font-size: 0.95rem;
 }
+
+/* ---- Phase 2: bid pricing screen (§8) ---- */
+
+/* First wide layout in the app: pricing happens on a laptop/tablet at the
+   kitchen table (§11), phones still get a stacked grid. */
+body.wide-page #root {
+  max-width: 1100px;
+}
+
+.bid-page select,
+.bid-page textarea,
+.sheet textarea {
+  font-size: 1rem;
+  border-radius: 10px;
+  border: 1px solid #2c333c;
+  background: var(--bg);
+  color: var(--text);
+  padding: 12px;
+  margin: 8px 0;
+  width: 100%;
+}
+
+.bid-division {
+  padding: 12px 16px;
+}
+
+.bid-division-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.bid-division-head h2 {
+  font-size: 1.05rem;
+  margin: 4px 0;
+}
+
+.bid-division-total {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.bid-line {
+  border-top: 1px solid #2c333c;
+  padding: 8px 0;
+}
+
+.bid-line-excluded {
+  opacity: 0.65;
+}
+
+.bid-line-grid {
+  display: grid;
+  grid-template-columns: 1fr 76px 84px 44px;
+  grid-template-areas:
+    "desc desc desc more"
+    "qty unit price ext";
+  gap: 6px;
+  align-items: center;
+}
+
+.bid-line-grid .bid-desc { grid-area: desc; }
+.bid-line-grid .bid-qty { grid-area: qty; }
+.bid-line-grid .bid-unit { grid-area: unit; }
+.bid-line-grid .bid-price { grid-area: price; }
+.bid-line-grid .bid-ext { grid-area: ext; }
+.bid-line-grid .bid-more { grid-area: more; justify-self: end; }
+
+@media (min-width: 720px) {
+  .bid-line-grid {
+    grid-template-columns: 1fr 90px 80px 110px 110px 40px;
+    grid-template-areas: "desc qty unit price ext more";
+  }
+}
+
+.bid-line-grid input,
+.bid-line-grid select {
+  margin: 0;
+  padding: 10px;
+  font-size: 0.95rem;
+}
+
+.bid-ext {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bid-qty.bid-needs {
+  border-color: var(--accent);
+}
+
+.bid-line-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.bid-hint {
+  color: var(--accent);
+  font-size: 0.8rem;
+}
+
+button.chip.bid-suggest {
+  margin: 0;
+  font-size: 0.85rem;
+  min-height: 0;
+  padding: 6px 10px;
+}
+
+.chip-static {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  border: 1px solid #2c333c;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.bid-orphan {
+  color: var(--danger);
+  font-size: 0.8rem;
+}
+
+.bid-totals {
+  position: sticky;
+  bottom: 0;
+  background: var(--surface);
+  border: 1px solid #2c333c;
+  border-radius: 12px 12px 0 0;
+  padding: 12px 16px calc(10px + env(safe-area-inset-bottom));
+  margin-top: 16px;
+}
+
+.bid-totals-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.bid-totals-grand {
+  font-size: 1.15rem;
+  font-weight: 700;
+  border-top: 1px solid #2c333c;
+  margin-top: 6px;
+  padding-top: 8px;
+}
+
+input.bid-markup-input {
+  width: 64px;
+  margin: 0 4px;
+  padding: 6px 8px;
+  font-size: 0.95rem;
+  display: inline-block;
+}
+
+/* Margin is the number the contractor runs the business on — always visible. */
+.bid-margin {
+  color: var(--accent);
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+}
+
+button.secondary.bid-delete {
+  color: var(--danger);
+}

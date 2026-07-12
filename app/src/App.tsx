@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "./api";
 import { cachedContractor } from "./db/store";
 import { onSyncState, pullBootstrap, startAutoSync, syncNow, type SyncState } from "./db/sync";
+import { BidSheet } from "./screens/BidSheet";
 import { Home } from "./screens/Home";
 import { Review } from "./screens/Review";
 import { WalkthroughRunner } from "./screens/WalkthroughRunner";
@@ -12,17 +13,21 @@ type AuthState =
   | { phase: "signed_out" }
   | { phase: "signed_in"; contractor: Contractor };
 
-// Hash routes: "" home, "#/wt/:id" runner, "#/wt/:id/review" review.
-// Hash routing keeps reloads offline-safe: the service worker serves the app
-// shell and the route re-resolves entirely from IndexedDB (Hard Rule 2).
+// Hash routes: "" home, "#/wt/:id" runner, "#/wt/:id/review" review,
+// "#/bid/:id" bid pricing. Hash routing keeps reloads offline-safe: the
+// service worker serves the app shell and the route re-resolves entirely from
+// IndexedDB (Hard Rule 2).
 type Route =
   | { name: "home" }
   | { name: "walkthrough"; id: string }
-  | { name: "review"; id: string };
+  | { name: "review"; id: string }
+  | { name: "bid"; id: string };
 
 function parseRoute(): Route {
   const m = window.location.hash.match(/^#\/wt\/([^/]+)(\/review)?$/);
   if (m && m[1]) return m[2] ? { name: "review", id: m[1] } : { name: "walkthrough", id: m[1] };
+  const b = window.location.hash.match(/^#\/bid\/([^/]+)$/);
+  if (b && b[1]) return { name: "bid", id: b[1] };
   return { name: "home" };
 }
 
@@ -92,7 +97,15 @@ export function App() {
         />
       )}
       {route.name === "review" && (
-        <Review walkthroughId={route.id} onBack={() => go(`#/wt/${route.id}`)} onDone={() => go("")} />
+        <Review
+          walkthroughId={route.id}
+          onBack={() => go(`#/wt/${route.id}`)}
+          onDone={() => go("")}
+          onBid={(bidSheetId) => go(`#/bid/${bidSheetId}`)}
+        />
+      )}
+      {route.name === "bid" && (
+        <BidSheet bidSheetId={route.id} onBack={() => window.history.back()} />
       )}
     </div>
   );

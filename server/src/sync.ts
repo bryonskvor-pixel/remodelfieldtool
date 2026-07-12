@@ -17,6 +17,9 @@ export interface SyncBatch {
   scope_items?: Row[];
   photos?: Row[];
   notes?: Row[];
+  price_book_items?: Row[];
+  bid_sheets?: Row[];
+  line_items?: Row[];
 }
 
 export interface SyncResult {
@@ -52,6 +55,20 @@ const COLUMNS: Record<string, string[]> = {
   notes: [
     "id", "parent_type", "parent_id", "type", "audio_r2_key", "transcript",
     "duration_sec", "sync_status", "created_at", "updated_at",
+  ],
+  price_book_items: [
+    "id", "category", "description", "unit", "last_unit_price",
+    "price_history", "labor_material_split", "active", "created_at", "updated_at",
+  ],
+  bid_sheets: [
+    "id", "project_id", "version", "status", "subtotal", "markup_pct",
+    "markup_amount", "tax_amount", "total", "created_at", "updated_at",
+  ],
+  line_items: [
+    "id", "bid_sheet_id", "scope_item_id", "price_book_item_id", "division",
+    "description", "qty", "unit", "unit_price", "extended", "is_allowance",
+    "allowance_note", "is_optional", "is_excluded_display", "internal_note",
+    "cost_breakdown", "deleted", "sort_order", "created_at", "updated_at",
   ],
 };
 
@@ -182,6 +199,18 @@ export async function applySyncBatch(batch: SyncBatch, contractorId: string): Pr
       }
     }
     await apply("notes", ok);
+  }
+
+  // Phase 2: price book (contractor-rooted, no parent), bid sheets, line items.
+  await apply("price_book_items", take("price_book_items"));
+  await apply("bid_sheets", await filterByParent("bid_sheets", take("bid_sheets"), "projects", "project_id", true));
+
+  {
+    // line_items: bid_sheet_id required; scope_item_id / price_book_item_id optional but verified.
+    let lines = await filterByParent("line_items", take("line_items"), "bid_sheets", "bid_sheet_id", true);
+    lines = await filterByParent("line_items", lines, "scope_items", "scope_item_id", false);
+    lines = await filterByParent("line_items", lines, "price_book_items", "price_book_item_id", false);
+    await apply("line_items", lines);
   }
 
   return { applied, rejected };

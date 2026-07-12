@@ -9,6 +9,7 @@ export interface Contractor {
   owner_name: string | null;
   email: string;
   default_markup_pct: number;
+  default_tax_rule: string | null; // bare percent ("7.25") or JSON {"rate": n}
   proposal_expiration_days: number;
 }
 
@@ -110,6 +111,66 @@ export interface Note {
   updated_at: string;
 }
 
+// ---- Bid sheet (Phase 2) -----------------------------------------------------
+
+export type Unit = "ea" | "lf" | "sf" | "sy" | "hr" | "day" | "lump" | "allowance";
+
+export interface BidSheet {
+  id: string;
+  project_id: string;
+  version: number;
+  status: "draft" | "priced" | "locked";
+  subtotal: number | null;
+  markup_pct: number | null;   // internal only — never renders to customer (Hard Rule 5)
+  markup_amount: number | null;
+  tax_amount: number | null;
+  total: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LineItem {
+  id: string;
+  bid_sheet_id: string;
+  scope_item_id: string | null;      // traceability back to the walkthrough
+  price_book_item_id: string | null;
+  division: string;
+  description: string;
+  qty: number | null;                // null = contractor must enter (Hard Rule 1)
+  unit: string;
+  unit_price: number | null;
+  extended: number | null;           // qty * unit_price when both present
+  is_allowance: number;
+  allowance_note: string | null;
+  is_optional: number;               // add-alternate
+  is_excluded_display: number;       // renders in exclusions, not pricing
+  internal_note: string | null;      // never renders to customer (Hard Rule 5)
+  cost_breakdown: string | null;     // JSON {"labor": n, "material": n}; sum = unit_price
+  deleted: number;                   // soft delete — hard deletes don't sync (pull would resurrect)
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PriceBookItem {
+  id: string;
+  category: string | null;
+  description: string;
+  unit: Unit;
+  last_unit_price: number | null;
+  price_history: string | null;         // JSON: {price, project_id, date}[]
+  labor_material_split: string | null;  // JSON {"labor": n, "material": n}
+  active: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PriceHistoryEntry {
+  price: number;
+  project_id: string | null;
+  date: string;
+}
+
 // ---- Templates (shape of templates/*.json checklist_json) -------------------
 
 export type CaptureKind = "photo" | "voice" | "note" | "measurement" | "choice";
@@ -127,6 +188,17 @@ export interface ConditionalPhoto {
   prompt: string;
 }
 
+export interface BidMapping {
+  division: string;
+  description: string;
+  unit: string;
+  when?: { answer?: string; answer_in?: string[]; flag?: string };
+  /** Where qty pre-fills from. Default "measurement" = sum of captured
+   * measurement qtys whose unit matches; floor_sf/wall_sf read the area's
+   * contractor-measured value. No match → null, contractor enters (Hard Rule 1). */
+  qty_source?: "measurement" | "floor_sf" | "wall_sf";
+}
+
 export interface TemplateItem {
   key: string;
   division: string;
@@ -139,7 +211,7 @@ export interface TemplateItem {
   condition: ItemCondition | null;
   photo_required: boolean;
   flags: string[];
-  bid_mapping: unknown[];
+  bid_mapping: BidMapping[];
   proposal_assumption?: string;
   conditional_photo?: ConditionalPhoto;
 }

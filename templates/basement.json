@@ -88,7 +88,7 @@
           "flags": [],
           "bid_mapping": [
             { "division": "structural_framing", "description": "Perimeter & partition framing", "unit": "lf" },
-            { "division": "insulation_air_sealing", "description": "Wall insulation + vapor strategy per code", "unit": "sf" },
+            { "division": "insulation_air_sealing", "description": "Wall insulation + vapor strategy per code", "unit": "sf", "qty_source": "wall_sf" },
             { "division": "insulation_air_sealing", "description": "Rim joist insulation & air sealing", "unit": "lf" }
           ]
         },
@@ -103,8 +103,8 @@
           "photo_required": false,
           "flags": [],
           "bid_mapping": [
-            { "division": "drywall_plaster", "description": "Ceiling drywall", "unit": "sf", "when": { "answer_in": ["drywall", "mixed"] } },
-            { "division": "specialties", "description": "Drop ceiling grid & tile", "unit": "sf", "when": { "answer_in": ["drop", "mixed"] } },
+            { "division": "drywall_plaster", "description": "Ceiling drywall", "unit": "sf", "qty_source": "floor_sf", "when": { "answer_in": ["drywall", "mixed"] } },
+            { "division": "specialties", "description": "Drop ceiling grid & tile", "unit": "sf", "qty_source": "floor_sf", "when": { "answer_in": ["drop", "mixed"] } },
             { "division": "specialties", "description": "Access panels (shutoffs, junctions, cleanouts)", "unit": "ea" }
           ]
         },

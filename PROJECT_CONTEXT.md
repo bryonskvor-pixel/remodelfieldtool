@@ -171,6 +171,7 @@ Every scope item and line item belongs to a division. Residential-friendly, roug
 
 Each project type is a template: an ordered set of capture prompts. Every prompt has:
 - `key`, `division`, `prompt` (field language), `capture` (what inputs it wants: measurement, photo, choice, condition note), `required_level` (required | conditional | optional), `condition` (logic that activates conditional items), `photo_required` (bool), and `bid_mapping` (which line items it seeds).
+- Each `bid_mapping` entry is `{division, description, unit, when?, qty_source?}` (added at Phase 2 build): `when` gates on `answer` / `answer_in` / `flag`; optional `qty_source: "floor_sf" | "wall_sf"` pre-fills the line's qty from the area's contractor-measured value instead of a unit-matching measurement (Hard Rule 1 either way — no heuristics).
 
 The lists below are the seed content. Claude Code should implement these as data (JSON templates), not hardcoded UI, so contractors can customize per §4.2 templates.
 
@@ -380,6 +381,42 @@ Universal block + kitchen + bath templates end-to-end, areas, photos (R2 + compr
 
 **Phase 2 — Bid & Proposal**
 Bid sheet generation from scope items, price book with auto-suggest, allowances/alternates/GC auto-seed, margin display, proposal builder (narrative AI-draft + edit), tokenized link + PDF + signature + view tracking. **Milestone: one real bid sent to one real customer.**
+
+*Status 2026-07-11: bid-sheet slice built and verified (proposal builder is the
+remaining half).* Generation (§8.1–8.2): "Generate bid sheet" on the review
+screen evaluates each captured step's template `bid_mapping` (`when` clauses:
+`answer` / `answer_in` / `flag`) — skipped and `no_change` items never price;
+lines group by §5 division. Quantities pre-fill ONLY from contractor-entered
+numbers (Hard Rule 1): unit-matching measurements (positional when several
+mappings on one item share a unit — a lone 14 lf never copies into both base
+and wall cabinet lines), or an explicit `qty_source: floor_sf|wall_sf`
+annotation reading the area's measured value (annotated on flooring / paint /
+tile-floor / ceiling / insulation template entries); everything else stays
+null with a "qty needed" hint. GC auto-seed (§8.7) reads the captured
+universal answers (year built, occupancy — project-row fields are fallback)
+and defers to GC lines the templates already produced (no duplicate dust
+protection / permit). Price book (§8.3, Hard Rule 6): keyed by normalized
+description + unit; every committed price appends to `price_history` +
+updates `last_unit_price`; suggestion chip shows "Last: $X/unit — [project],
+[date]", tap to accept. Allowance / add-alternate / move-to-exclusions /
+labor-material split (`line_items.cost_breakdown` JSON, sum = unit_price) /
+delete live in a per-line action sheet; deletion is a soft `deleted` flag
+(hard deletes wouldn't survive the bootstrap pull). Math (§8.8): subtotal
+(allowances in, alternates/exclusions out) → markup % (default from
+contractor, editable per sheet) → tax from `contractors.default_tax_rule`
+(bare percent or `{"rate":n}`; unset shows "no tax rule set") → total, with
+"this bid carries X% gross margin" always visible. Regeneration is an
+additive merge into the project's draft sheet: lines matching on
+(scope_item_id, division, normalized description) are left untouched, orphans
+are badged never deleted. Offline-first throughout: `bid_sheets`,
+`line_items`, `price_book_items` are full sync/bootstrap citizens (migrations
+0003/0004 added `updated_at` etc.; server sync verifies parent ownership per
+Hard Rule 7). The bid screen is the app's first wide layout
+(`body.wide-page`, 1100px on desktop, stacked grid on phones). Pure engine in
+`app/src/bid/` (42 vitest tests; 78 total). Verified in an automated browser
+run (24/24 checks: generation, HR1 qty rules, GC seeds/dedupe, price book
+round-trip + suggestion, allowance, regen preservation, Turso sync, desktop
+layout).
 
 **Phase 3 — Loop closure**
 Remaining four project types refined from field feedback, real website intake form + lead flow (replacing the current email-only intake), optional Airtable mirror if a contractor wants it, bid-to-actual reconciliation (log actual costs per line, show variance, feed price book intelligence: "you've underpriced tile labor on 4 of your last 5 jobs by an average of 18%").

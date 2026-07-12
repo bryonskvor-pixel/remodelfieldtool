@@ -51,6 +51,17 @@ if (notes.rows.length) {
     [...notes.rows.map((n) => String(n.id)), contractorId]);
 }
 await del("DELETE FROM photos WHERE walkthrough_id = ? AND contractor_id = ?", [wtId, contractorId]);
+// Phase 2 children first: line_items reference scope_items and bid_sheets.
+const bsIds = (await db.execute({
+  sql: "SELECT id FROM bid_sheets WHERE project_id = ? AND contractor_id = ?",
+  args: [projectId, contractorId],
+})).rows.map((r) => String(r.id));
+if (bsIds.length) {
+  await del(`DELETE FROM line_items WHERE bid_sheet_id IN (${bsIds.map(() => "?").join(",")}) AND contractor_id = ?`,
+    [...bsIds, contractorId]);
+  await del(`DELETE FROM bid_sheets WHERE id IN (${bsIds.map(() => "?").join(",")}) AND contractor_id = ?`,
+    [...bsIds, contractorId]);
+}
 if (siIds.length) {
   await del(`DELETE FROM scope_items WHERE id IN (${siIds.map(() => "?").join(",")}) AND contractor_id = ?`, [...siIds, contractorId]);
 }

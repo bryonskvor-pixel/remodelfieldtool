@@ -6,6 +6,7 @@ import type { Photo } from "../types";
 import { NoteLine } from "../components/NoteLine";
 import { useWalkthroughData } from "./WalkthroughRunner";
 import { db, now } from "../db/store";
+import { generateBidSheet } from "../bid/generate";
 import { buildSteps, captureFor, humanizeKey, parsedMeasurements } from "../walkthrough/engine";
 import { scoreWalkthrough } from "../walkthrough/completeness";
 
@@ -13,14 +14,16 @@ import { scoreWalkthrough } from "../walkthrough/completeness";
 // score as X of Y. "Complete" warns loudly but NEVER blocks (Hard Rule 4).
 
 export function Review({
-  walkthroughId, onBack, onDone,
+  walkthroughId, onBack, onDone, onBid,
 }: {
   walkthroughId: string;
   onBack: () => void;
   onDone: () => void;
+  onBid: (bidSheetId: string) => void;
 }) {
   const data = useWalkthroughData(walkthroughId);
   const [annotating, setAnnotating] = useState<Photo | null>(null);
+  const [generating, setGenerating] = useState(false);
 
   const steps = useMemo(
     () => (data ? buildSteps(data.areas, data.templates, data.scopeItems) : []),
@@ -44,6 +47,17 @@ export function Review({
   }
 
   const complete_ = data.walkthrough.status === "complete";
+
+  // Generation warns (via the flags above and the button label) but never
+  // blocks — Hard Rule 4. Regeneration is additive; priced lines survive.
+  async function generateBid() {
+    setGenerating(true);
+    try {
+      onBid(await generateBidSheet(walkthroughId));
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   return (
     <div>
@@ -139,6 +153,13 @@ export function Review({
         {complete_ ? "Update completeness score" : report.redFlags.length > 0
           ? `Complete anyway (${report.redFlags.length} missing)`
           : "Complete walkthrough"}
+      </button>
+      <button disabled={generating} onClick={() => void generateBid()}>
+        {generating
+          ? "Generating…"
+          : report.redFlags.length > 0
+            ? `Generate bid sheet anyway (${report.redFlags.length} missing)`
+            : "Generate bid sheet"}
       </button>
       <p className="muted">
         Completing never blocks you — missing items stay logged and skipped items

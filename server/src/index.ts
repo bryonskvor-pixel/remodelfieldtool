@@ -40,7 +40,7 @@ app.get("/api/me", requireSession, async (c) => {
   const result = await db.execute({
     // Hard Rule 7: contractor-scoped query filters by contractor_id.
     sql: `SELECT id, business_name, owner_name, email, default_markup_pct,
-                 proposal_expiration_days
+                 default_tax_rule, proposal_expiration_days
           FROM contractors WHERE id = ?`,
     args: [contractorId],
   });
@@ -122,7 +122,7 @@ app.get("/api/bootstrap", requireSession, async (c) => {
   // Hard Rule 7: every query below filters by contractor_id.
   const contractor = await db.execute({
     sql: `SELECT id, business_name, owner_name, email, default_markup_pct,
-                 proposal_expiration_days
+                 default_tax_rule, proposal_expiration_days
           FROM contractors WHERE id = ?`,
     args: [contractorId],
   });
@@ -160,8 +160,9 @@ app.get("/api/bootstrap", requireSession, async (c) => {
       sql: `SELECT * FROM ${table} WHERE contractor_id = ?`,
       args: [contractorId],
     });
-  const [areas, scopeItems, photos, notes] = await Promise.all([
+  const [areas, scopeItems, photos, notes, priceBook, bidSheets, lineItems] = await Promise.all([
     pull("areas"), pull("scope_items"), pull("photos"), pull("notes"),
+    pull("price_book_items"), pull("bid_sheets"), pull("line_items"),
   ]);
   return c.json({
     contractor: contractor.rows[0],
@@ -173,6 +174,9 @@ app.get("/api/bootstrap", requireSession, async (c) => {
     scope_items: scopeItems.rows,
     photos: photos.rows,
     notes: notes.rows,
+    price_book_items: priceBook.rows,
+    bid_sheets: bidSheets.rows,
+    line_items: lineItems.rows,
   });
 });
 

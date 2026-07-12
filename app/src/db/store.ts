@@ -4,7 +4,7 @@
 // never needs the network to run a walkthrough (Hard Rule 2).
 
 import { ENTITY_STORES, idbDelete, idbGet, idbGetAll, idbGetDirty, idbPut, type EntityStore } from "./idb";
-import type { Area, Contractor, Note, Photo, Project, ScopeItem, Template, Walkthrough } from "../types";
+import type { Area, BidSheet, Contractor, LineItem, Note, Photo, PriceBookItem, Project, ScopeItem, Template, Walkthrough } from "../types";
 
 export type Synced<T> = T & { _dirty?: 0 | 1 };
 
@@ -92,6 +92,21 @@ export const db = {
     put: (r: Note) => put<Note>("notes", r),
     get: (id: string) => get<Note>("notes", id),
     all: () => all<Note>("notes"),
+  },
+  price_book_items: {
+    put: (r: PriceBookItem) => put<PriceBookItem>("price_book_items", r),
+    get: (id: string) => get<PriceBookItem>("price_book_items", id),
+    all: () => all<PriceBookItem>("price_book_items"),
+  },
+  bid_sheets: {
+    put: (r: BidSheet) => put<BidSheet>("bid_sheets", r),
+    get: (id: string) => get<BidSheet>("bid_sheets", id),
+    all: () => all<BidSheet>("bid_sheets"),
+  },
+  line_items: {
+    put: (r: LineItem) => put<LineItem>("line_items", r),
+    get: (id: string) => get<LineItem>("line_items", id),
+    all: () => all<LineItem>("line_items"),
   },
 };
 

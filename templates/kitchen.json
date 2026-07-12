@@ -262,7 +262,7 @@
           "photo_required": false,
           "flags": ["height_transition_check", "subfloor_condition"],
           "bid_mapping": [
-            { "division": "flooring", "description": "Flooring supply & install", "unit": "sf" },
+            { "division": "flooring", "description": "Flooring supply & install", "unit": "sf", "qty_source": "floor_sf" },
             { "division": "flooring", "description": "Subfloor repair", "unit": "sf", "when": { "flag": "subfloor_condition" } },
             { "division": "flooring", "description": "Transition strips / height reconciliation", "unit": "ea" }
           ]
@@ -279,7 +279,7 @@
           "flags": [],
           "bid_mapping": [
             { "division": "drywall_plaster", "description": "Drywall repair/replacement after demo", "unit": "sf" },
-            { "division": "paint_finishes", "description": "Paint walls/ceiling/trim", "unit": "sf" }
+            { "division": "paint_finishes", "description": "Paint walls/ceiling/trim", "unit": "sf", "qty_source": "wall_sf" }
           ],
           "proposal_assumption": "Drywall behind removed cabinets/soffits assumed patchable; full replacement priced separately if discovered."
         },

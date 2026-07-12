@@ -72,10 +72,10 @@
           "photo_required": false,
           "flags": ["auto:labor_multiplier_if_large_format_or_complex"],
           "bid_mapping": [
-            { "division": "tile_stone", "description": "Floor tile", "unit": "sf" },
+            { "division": "tile_stone", "description": "Floor tile", "unit": "sf", "qty_source": "floor_sf" },
             { "division": "tile_stone", "description": "Wall tile (wet area)", "unit": "sf" },
             { "division": "electrical", "description": "Heated floor circuit + thermostat", "unit": "lump", "when": { "flag": "heated_floor" } },
-            { "division": "tile_stone", "description": "Heated floor mat/cable install", "unit": "sf", "when": { "flag": "heated_floor" } }
+            { "division": "tile_stone", "description": "Heated floor mat/cable install", "unit": "sf", "qty_source": "floor_sf", "when": { "flag": "heated_floor" } }
           ]
         },
         {

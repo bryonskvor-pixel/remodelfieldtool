@@ -66,8 +66,24 @@ annotator (drag arrows/circles, vector JSON in `photos.annotation_data`,
 ✏️ badge); walkthrough start fills `gps_lat/lng` best-effort, never blocking.
 Media-upload write-backs now patch the current row (stale-snapshot clobber
 fixed in `app/src/db/media.ts`).
-Remaining for Phase 1: Bryon's real-phone run; then Phase 2 (bid sheet +
-proposal).
+**Phase 1 COMPLETE** — Bryon's real-phone run done 2026-07-11, no issues.
+**Phase 2 bid-sheet slice done (2026-07-11).** "Generate bid sheet" on review
+→ template `bid_mapping` evaluation (when: answer/answer_in/flag), qty only
+from contractor-entered numbers (unit-matching measurements, positional when
+mappings share a unit; or `qty_source: floor_sf|wall_sf` reading area dims —
+Hard Rule 1), GC auto-seed from captured universal answers (dedupes against
+template-produced GC lines), price book keyed by normalized description+unit
+(history + "Last: $X" suggestion chips, Hard Rule 6), allowance/alternate/
+exclusion/labor-material-split/soft-delete per line, live totals + gross
+margin, additive regeneration (touched lines never overwritten, orphans
+badged). `bid_sheets`/`line_items`/`price_book_items` sync + bootstrap like
+everything else (migrations 0003/0004); the bid screen (`#/bid/:id`) is the
+first wide layout (`body.wide-page`). Pure engine in `app/src/bid/` (vitest).
+Verified in an automated browser run (24/24 checks incl. Turso sync).
+Remaining for Phase 2: proposal builder (§9) — narrative AI-draft + edit,
+tokenized public link, PDF, signature, view tracking. Hard Rule 5 is the
+crux there: transcripts, internal notes, markup, cost_breakdown never render
+to the customer.
 
 ## Out of scope (v1 — see §12)
 

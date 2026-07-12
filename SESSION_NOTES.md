@@ -1,5 +1,91 @@
 # Session Notes — ScopeWalk (remodelfieldtool)
 
+## 2026-07-11 (session 6) — Phase 2 slice 1: bid sheet + price book + margin
+
+**Accomplished**
+- Phase 1 formally closed: Bryon's real-phone offline run happened, no issues.
+- **Bid generation engine** (`app/src/bid/bidgen.ts`, pure, 34 of the 42 new
+  vitest tests): evaluates template `bid_mapping` per captured step
+  (`when: answer | answer_in | flag`); skipped / `no_change` items never
+  price. Hard Rule 1 quantity rules: sum of unit-matching measurements; when
+  several mappings on ONE item share a unit (base + wall cabinet LF),
+  measurements assign by position — a lone measurement fills the first line
+  and leaves the rest null rather than inventing an allocation; `lump` → 1;
+  new template annotation `qty_source: floor_sf | wall_sf` reads the area's
+  measured value (annotated on flooring/paint/tile-floor/ceiling/insulation
+  entries in kitchen/bath/basement/general templates); anything else → null +
+  amber "qty needed". GC auto-seed (§8.7) reads captured universal answers
+  (year built measurement, occupancy choice; project fields only as fallback
+  — the capture flow never writes them) and SKIPS topics the templates
+  already produced (universal.occupied → dust protection, deck permit…), so
+  no duplicates. Division order/labels for all 19 §5 divisions live here too.
+- **Price book** (`app/src/bid/pricebook.ts`): key = normalized description +
+  unit. Committing any price (typed or accepted chip) appends
+  `{price, project_id, date}` to `price_history`, updates `last_unit_price`,
+  links `line_items.price_book_item_id`. Suggestion chip: "Last: $85.00/lf —
+  Miller Kitchen, 3/12" → tap to accept. Offline rows, per-contractor by
+  construction (Hard Rule 6).
+- **Orchestration** (`app/src/bid/generate.ts`): find-or-create the project's
+  draft bid sheet (markup from contractor default). Regeneration = additive
+  merge on (scope_item_id, division, normalized desc): touched lines keep
+  price/qty/allowance state; orphaned generated lines get a ⚠ internal_note
+  badge (cleared if the source re-enters scope), never deleted.
+- **Pricing screen** (`app/src/screens/BidSheet.tsx`, route `#/bid/:id`,
+  button on Review): division cards with subtotals, commit-on-blur inputs,
+  suggestion chips, per-line "⋯" sheet (allowance + note, add-alternate,
+  move-to-exclusions, labor/material split → `cost_breakdown` JSON with
+  unit_price = sum, delete), sticky totals bar (subtotal → editable markup %
+  → tax → total) with the margin line always visible; "no tax rule set"
+  labeled when `contractors.default_tax_rule` is empty. First WIDE layout:
+  `body.wide-page` → 1100px grid on desktop, stacked grid <720px.
+- **Sync/schema**: migrations 0003 (updated_at on the 4 Phase 2 tables +
+  created_at + `line_items.cost_breakdown`) and 0004 (`line_items.deleted`
+  soft-delete — hard deletes would resurrect on bootstrap pull). Client
+  ENTITY_STORES + DB_VERSION 2; server sync COLUMNS + FK-ordered ownership
+  checks (price_book → contractor, bid_sheets → projects, line_items →
+  bid_sheets [+optional scope_item/price_book refs], Hard Rule 7); bootstrap
+  pulls all three; `/api/me` + bootstrap now return `default_tax_rule`.
+- Verified end-to-end with Playwright (24/24): seeded kitchen capture →
+  generate → HR1 qty assertions → price → book row + history → chip
+  suggestion + accept → allowance → regenerate (nothing clobbered, no dupes)
+  → "Synced" against real Turso → desktop/mobile screenshots. Test rows +
+  price-book entries cleaned from Turso after each run;
+  `cleanup-walkthrough.ts` extended to delete bid_sheets/line_items (before
+  scope_items — FK order).
+
+**State**
+- Bid-sheet half of Phase 2 DONE. 78 vitest tests pass, both workspaces
+  typecheck. Turso holds only "Miller" and "Smith" (Bryon's data). Bryon's
+  dev servers were running during the session (tsx watch picked up changes —
+  that's also why migration 0003 applied mid-edit and `deleted` needed 0004).
+- Not committed yet — working tree has the full slice.
+
+**Next steps**
+- **Phase 2 second half: proposal builder (§9)** — display modes, scope
+  narrative (Claude API draft, contractor edits — suggestion only),
+  exclusions/assumptions auto-seeded from yellowFlags' draftedAssumption,
+  tokenized public link (`proposals.public_token` exists; follow the intake
+  pattern for the unauthenticated route), server-side PDF (no PDF dep chosen
+  yet; Playwright/Chromium available), typed-name signature, view tracking.
+  Milestone: one real bid sent to one real customer.
+- Contractor-profile editing (tax rule, markup default) still has no UI —
+  tax shows "no tax rule set" until then.
+- Still parked: Ohio local-code defaults from Bradford; rotate Turso token;
+  real email provider before Phase 3.
+
+**Context**
+- Hard Rule 5 map for the proposal renderer: never render `markup_pct/amount`,
+  `internal_note`, `cost_breakdown`, transcripts, GPS. `is_excluded_display`
+  lines render in Exclusions WITHOUT pricing; `deleted` lines render nowhere.
+- Bid math: subtotal includes allowances, excludes add-alternates and
+  exclusion-display lines; margin = markup / (subtotal + markup).
+- `seedGeneralConditions` dedupe is keyword-based ("permit", "dust
+  protection", "lead-safe"…) against generated GC lines — if new templates
+  add GC mappings, keep descriptions containing those keywords.
+- BidSheet inputs are uncontrolled + commit-on-blur (keyed by value so
+  external updates re-render); don't convert to controlled without handling
+  the store-change reload loop.
+
 ## 2026-07-11 (session 5) — Sketch mode + photo annotation + GPS: Phase 1 code complete
 
 **Accomplished**
