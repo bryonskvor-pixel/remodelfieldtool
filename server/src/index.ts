@@ -1,5 +1,8 @@
 import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { randomUUID } from "node:crypto";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { getDb } from "./db.js";
@@ -22,8 +25,12 @@ app.get("/api/health", (c) => c.json({ ok: true }));
 app.post("/api/auth/request-link", async (c) => {
   const body = await c.req.json<{ email?: string }>().catch(() => ({}) as { email?: string });
   if (!body.email) return c.json({ error: "email required" }, 400);
-  await requestMagicLink(body.email);
-  // Always 200: no account enumeration.
+  // Always 200: no account enumeration. A delivery failure (e.g. Resend
+  // rejects) is logged server-side but never distinguishes a known email
+  // from an unknown one in the response.
+  await requestMagicLink(body.email).catch((err) => {
+    console.error("[auth] request-link failed:", err);
+  });
   return c.json({ ok: true, message: "If that email exists, a sign-in link was sent." });
 });
 
@@ -235,6 +242,29 @@ app.post("/api/sync", requireSession, async (c) => {
   const result = await applySyncBatch(batch, c.get("contractorId"));
   return c.json(result);
 });
+
+// ---- Static PWA (single-origin production serving) --------------------------
+// One deployed service answers the app shell, the API, and public proposal
+// links from the same origin. Single-origin keeps the offline/PWA story and
+// the session cookie simple — no CORS, no cross-site cookie. In dev this is
+// skipped: Vite serves the app and proxies /api + /p here (vite.config.ts).
+// Set SERVE_STATIC=false to opt out (e.g. running the API standalone).
+if (process.env.SERVE_STATIC !== "false") {
+  // Absolute so it resolves regardless of the process cwd (Render, npm
+  // workspace, etc.). server/src/index.ts -> repo/app/dist.
+  const dist =
+    process.env.PWA_DIST ??
+    path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../app/dist");
+  // Real files first (assets, icons, manifest, sw.js, …).
+  app.use("*", serveStatic({ root: dist }));
+  // SPA fallback: hash routes and the client-handled /auth/verify path all
+  // live under index.html. API + public-proposal misses stay real 404s.
+  app.get("*", (c, next) => {
+    const p = c.req.path;
+    if (p.startsWith("/api") || p.startsWith("/p/")) return next();
+    return serveStatic({ root: dist, path: "index.html" })(c, next);
+  });
+}
 
 // ---- Boot -------------------------------------------------------------------
 

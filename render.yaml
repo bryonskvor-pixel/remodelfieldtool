@@ -1,0 +1,63 @@
+# Render Blueprint — deploys ScopeWalk as a single web service that serves the
+# PWA, the API, and public proposal links from one origin.
+#
+# One-time setup: in the Render dashboard, connect the GitHub repo, then add
+# the secret env vars marked `sync: false` below (they are intentionally NOT
+# stored in git). See GO_LIVE.md for the full checklist.
+services:
+  - type: web
+    name: scopewalk
+    runtime: node
+    plan: starter # Playwright/Chromium PDF needs more than the free tier's RAM
+    region: ohio
+    branch: main
+    # Build the PWA (-> app/dist) and typecheck the server.
+    buildCommand: npm install && npm run build
+    # migrate() runs on boot (server/src/index.ts); seed is idempotent and
+    # ensures system templates + the pilot contractor exist on every deploy.
+    preDeployCommand: npm run seed --workspace=server
+    startCommand: npm run start --workspace=server
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Public origin — used to build magic-link URLs and must match the
+      # custom domain you attach to this service.
+      - key: APP_ORIGIN
+        value: https://scopewalk.cleanconstructionllc.com
+      # Login email via the already-verified Resend domain.
+      - key: EMAIL_PROVIDER
+        value: resend
+      - key: AUTH_EMAIL_FROM
+        value: ScopeWalk <login@cleanconstructionllc.com>
+      # Pilot contractor seeded on deploy (Brad).
+      - key: SEED_CONTRACTOR_EMAIL
+        value: cleanconstructionllc.19@gmail.com
+      - key: SEED_CONTRACTOR_BUSINESS_NAME
+        value: Clean Construction LLC
+      - key: SEED_CONTRACTOR_OWNER_NAME
+        value: Brad Skvor
+      - key: SESSION_TTL_DAYS
+        value: "90"
+      - key: MAGIC_LINK_TTL_MINUTES
+        value: "15"
+      - key: R2_BUCKET
+        value: scopewalk-media
+      # --- Secrets: set these in the Render dashboard, not in git ---
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false

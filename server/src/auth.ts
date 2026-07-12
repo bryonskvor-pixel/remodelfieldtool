@@ -43,9 +43,52 @@ export async function requestMagicLink(email: string): Promise<void> {
   const provider = process.env.EMAIL_PROVIDER ?? "console";
   if (provider === "console") {
     console.log(`\n[auth] magic link for ${normalized}:\n${link}\n`);
+  } else if (provider === "resend") {
+    await sendMagicLinkEmail(normalized, link);
   } else {
-    // Pluggable providers (e.g. Resend) land with intake work; same shape.
     throw new Error(`EMAIL_PROVIDER "${provider}" not implemented`);
+  }
+}
+
+/**
+ * Sends the sign-in link via Resend. Reuses the domain already verified for
+ * the pilot (cleanconstructionllc.com) — set AUTH_EMAIL_FROM to a from-address
+ * on that verified domain. Deliberately no external SDK: one fetch, same shape
+ * as the marketing site's contact form.
+ */
+async function sendMagicLinkEmail(email: string, link: string): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error("EMAIL_PROVIDER=resend but RESEND_API_KEY is unset");
+  const from = process.env.AUTH_EMAIL_FROM ?? "ScopeWalk <login@cleanconstructionllc.com>";
+  const ttl = Number(process.env.MAGIC_LINK_TTL_MINUTES ?? 15);
+  const text = [
+    `Here's your ScopeWalk sign-in link:`,
+    ``,
+    link,
+    ``,
+    `It expires in ${ttl} minutes and can be used once.`,
+    `If you didn't request this, you can ignore this email.`,
+  ].join("\n");
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: email,
+      subject: "Your ScopeWalk sign-in link",
+      text,
+    }),
+  });
+  if (!res.ok) {
+    const detail = await res.text();
+    // Surface the failure: the request handler still returns a generic 200
+    // (no account enumeration), but the server log records why nothing sent.
+    console.error(`[auth] Resend send failed (${res.status}): ${detail}`);
+    throw new Error(`Resend send failed: ${res.status}`);
   }
 }
 
