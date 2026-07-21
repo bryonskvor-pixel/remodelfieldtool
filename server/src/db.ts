@@ -1,11 +1,9 @@
+// Loads .env and trims stray whitespace/newlines off every env value. Must be
+// imported before anything reads process.env.
+import "./env.js";
 import { createClient, type Client } from "@libsql/client";
-import { config } from "dotenv";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-// .env lives at the repo root regardless of which workspace invoked us.
-config({ path: path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../.env") });
 
 // HARD RULE 7 (PROJECT_CONTEXT.md §1.1): every query touching
 // contractor-scoped data MUST filter by contractor_id. Turso has no row-level
