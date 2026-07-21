@@ -12,7 +12,10 @@ services:
     region: ohio
     branch: main
     # Build the PWA (-> app/dist) and typecheck the server.
-    buildCommand: npm install && npm run build
+    # --include=dev is REQUIRED: NODE_ENV=production (set below, for secure
+    # cookies) makes npm omit devDependencies by default, but the build needs
+    # vite/typescript and the start command needs tsx — all devDependencies.
+    buildCommand: npm install --include=dev && npm run build
     # migrate() runs on boot (server/src/index.ts); seed is idempotent and
     # ensures system templates + the pilot contractor exist on every deploy.
     preDeployCommand: npm run seed --workspace=server
