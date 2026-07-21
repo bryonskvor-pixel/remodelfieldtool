@@ -25,6 +25,11 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Talk to Turso directly over HTTP. Render's disk is ephemeral, so an
+      # embedded replica would re-sync on every boot — and its native binding
+      # aborts (SIGABRT / exit 134) in this container.
+      - key: DB_REMOTE_ONLY
+        value: "true"
       # Public origin — used to build magic-link URLs and must match the
       # custom domain you attach to this service.
       - key: APP_ORIGIN

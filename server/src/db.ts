@@ -21,6 +21,20 @@ export function getDb(): Client {
   const syncUrl = process.env.TURSO_DATABASE_URL || undefined;
   const authToken = process.env.TURSO_AUTH_TOKEN || undefined;
 
+  // Hosted deployments (Render) run stateless containers on an ephemeral
+  // disk: an embedded replica would re-hydrate the whole database from Turso
+  // on every boot, and it pulls in the native libsql binding — which aborts
+  // (SIGABRT) in that environment. Talk to Turso directly over HTTP instead;
+  // it's pure JS, stateless, and correct for a container that keeps no disk.
+  // Local dev keeps the embedded replica (the offline-first story, §3).
+  if (process.env.DB_REMOTE_ONLY === "true") {
+    if (!syncUrl) {
+      throw new Error("DB_REMOTE_ONLY=true requires TURSO_DATABASE_URL");
+    }
+    client = createClient({ url: syncUrl, authToken });
+    return client;
+  }
+
   // Ensure the data directory exists for the local file.
   const filePath = localPath.replace(/^file:/, "");
   mkdirSync(path.dirname(path.resolve(filePath)), { recursive: true });
