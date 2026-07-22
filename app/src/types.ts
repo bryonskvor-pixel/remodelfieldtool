@@ -21,6 +21,34 @@ export interface Contractor {
 
 export type ProjectType = "kitchen" | "bath" | "basement" | "deck_patio" | "addition" | "general";
 
+// CRM slice: leads hold the customer's contact info. Created by website intake
+// (server-side), or manually in-app when the customer calls. A project links
+// back via lead_id, so the customer record follows the job through bid and
+// proposal. intake_notes / budget_range_stated are contractor-internal
+// (Hard Rule 5) — the proposal renderer never reads them.
+export type LeadStatus =
+  | "new" | "contacted" | "walkthrough_scheduled" | "walkthrough_done"
+  | "bid_sent" | "won" | "lost" | "dead";
+
+export interface Lead {
+  id: string;
+  source: "website_intake" | "manual" | "referral";
+  customer_name: string;
+  email: string | null;
+  phone: string | null;
+  address_street: string | null;
+  address_city: string | null;
+  address_state: string | null;
+  address_zip: string | null;
+  project_type_interest: string | null;
+  budget_range_stated: string | null;
+  timeline_stated: string | null;
+  intake_notes: string | null;
+  status: LeadStatus;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Project {
   id: string;
   lead_id: string | null;

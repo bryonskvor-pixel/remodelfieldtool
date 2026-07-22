@@ -107,6 +107,17 @@ magic-link login emails via Resend; env values trimmed at startup
 (`server/src/env.ts`). Full deployment decisions in PROJECT_CONTEXT.md §15.
 **KNOWN GAP: proposal PDF 503s on Render (no Chromium there) — needs
 build-time Chromium or Docker+Playwright image. Flagged to revisit.**
+**CRM lead slice done (2026-07-22).** Leads are now a synced offline entity
+(migration 0006 adds `leads.updated_at`; IndexedDB v4; leads in `/api/sync`
+COLUMNS, applied before projects). Start-walkthrough form captures customer
+name/phone/email/address → creates a `manual` lead linked via
+`project.lead_id`; website-intake leads (`POST /api/intake/:contractorId`)
+surface in a "New leads" card on Home after the bootstrap pull — tapping one
+prefills the start form (title suggestion, type from interest, contact
+fields, intake notes) and links the project. Lead status auto-advances to
+`walkthrough_scheduled` on start. Recent-projects list shows the customer
+name. Verified in an automated browser run (19 checks incl. offline manual
+lead + Turso sync).
 **Remaining for the Phase 2 milestone: one real bid sent to one real
 customer.**
 

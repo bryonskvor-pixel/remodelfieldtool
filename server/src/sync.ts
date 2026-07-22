@@ -11,6 +11,7 @@ import { getDb } from "./db.js";
 type Row = Record<string, unknown>;
 
 export interface SyncBatch {
+  leads?: Row[];
   projects?: Row[];
   walkthroughs?: Row[];
   areas?: Row[];
@@ -31,6 +32,12 @@ export interface SyncResult {
 // Client-writable columns per table. contractor_id is intentionally absent —
 // it is injected server-side. Anything not listed is dropped.
 const COLUMNS: Record<string, string[]> = {
+  leads: [
+    "id", "source", "customer_name", "email", "phone",
+    "address_street", "address_city", "address_state", "address_zip",
+    "project_type_interest", "budget_range_stated", "timeline_stated",
+    "intake_notes", "status", "created_at", "updated_at",
+  ],
   projects: [
     "id", "lead_id", "project_type", "title", "property_year_built",
     "occupied", "status", "created_at", "updated_at",
@@ -152,6 +159,9 @@ export async function applySyncBatch(batch: SyncBatch, contractorId: string): Pr
   };
 
   // Parents first, children verified against parents already in the DB.
+  // Leads are contractor-rooted (no parent) and must land before projects,
+  // which verify lead_id ownership against them.
+  await apply("leads", take("leads"));
 
   const projects = take("projects");
   {

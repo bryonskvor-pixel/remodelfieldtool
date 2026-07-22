@@ -116,8 +116,9 @@ app.post("/api/intake/:contractorId", async (c) => {
   await db.execute({
     sql: `INSERT INTO leads (id, contractor_id, source, customer_name, email, phone,
             address_street, address_city, address_state, address_zip,
-            project_type_interest, budget_range_stated, timeline_stated, intake_notes)
-          VALUES (?, ?, 'website_intake', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            project_type_interest, budget_range_stated, timeline_stated, intake_notes,
+            updated_at)
+          VALUES (?, ?, 'website_intake', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
     args: [
       id, contractorId, b.customer_name, b.email ?? null, b.phone ?? null,
       b.address_street ?? null, b.address_city ?? null, b.address_state ?? null,

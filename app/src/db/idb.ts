@@ -5,13 +5,13 @@
 // the browser side is IndexedDB, which we need for photo/audio blobs anyway.)
 
 const DB_NAME = "scopewalk";
-const DB_VERSION = 3; // v3: proposals (Phase 2 slice 2)
+const DB_VERSION = 4; // v4: leads (CRM slice)
 
 // Entity stores hold rows shaped like the server schema plus a `_dirty` flag.
 // `blobs` holds { id, blob, kind } for photos/audio awaiting R2 upload.
 // `kv` holds contractor cache, cached templates, and misc app state.
 export const ENTITY_STORES = [
-  "projects", "walkthroughs", "areas", "scope_items", "photos", "notes",
+  "leads", "projects", "walkthroughs", "areas", "scope_items", "photos", "notes",
   "price_book_items", "bid_sheets", "line_items", "proposals",
 ] as const;
 export type EntityStore = (typeof ENTITY_STORES)[number];

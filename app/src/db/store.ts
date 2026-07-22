@@ -4,7 +4,7 @@
 // never needs the network to run a walkthrough (Hard Rule 2).
 
 import { ENTITY_STORES, idbDelete, idbGet, idbGetAll, idbGetDirty, idbPut, type EntityStore } from "./idb";
-import type { Area, BidSheet, Contractor, LineItem, Note, Photo, PriceBookItem, Project, Proposal, ScopeItem, Template, Walkthrough } from "../types";
+import type { Area, BidSheet, Contractor, Lead, LineItem, Note, Photo, PriceBookItem, Project, Proposal, ScopeItem, Template, Walkthrough } from "../types";
 
 export type Synced<T> = T & { _dirty?: 0 | 1 };
 
@@ -63,6 +63,11 @@ export async function remove(store: EntityStore, id: string): Promise<void> {
 // Typed conveniences ----------------------------------------------------------
 
 export const db = {
+  leads: {
+    put: (r: Lead) => put<Lead>("leads", r),
+    get: (id: string) => get<Lead>("leads", id),
+    all: () => all<Lead>("leads"),
+  },
   projects: {
     put: (r: Project) => put<Project>("projects", r),
     get: (id: string) => get<Project>("projects", id),
