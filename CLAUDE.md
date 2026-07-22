@@ -117,7 +117,11 @@ prefills the start form (title suggestion, type from interest, contact
 fields, intake notes) and links the project. Lead status auto-advances to
 `walkthrough_scheduled` on start. Recent-projects list shows the customer
 name. Verified in an automated browser run (19 checks incl. offline manual
-lead + Turso sync).
+lead + Turso sync). Website intake WIRED same day: the marketing site's
+`api/contact.js` (repo `bryonskvor-pixel/cleanconstruction`, Vercel) POSTs
+every inquiry to the intake endpoint (best-effort, never blocks the email);
+verified end-to-end in production. NOTE: local dev reads via the embedded
+replica can lag remote Turso — verify prod rows with `DB_REMOTE_ONLY=true`.
 **Remaining for the Phase 2 milestone: one real bid sent to one real
 customer.**
 
