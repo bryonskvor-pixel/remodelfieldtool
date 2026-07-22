@@ -458,6 +458,29 @@ real send).
 **Phase 3 — Loop closure**
 Remaining four project types refined from field feedback, real website intake form + lead flow (replacing the current email-only intake), optional Airtable mirror if a contractor wants it, bid-to-actual reconciliation (log actual costs per line, show variance, feed price book intelligence: "you've underpriced tile labor on 4 of your last 5 jobs by an average of 18%").
 
+**Candidate for Phase 3 — per-project budget/actuals tracker (Bryon, 2026-07-11).**
+Bryon wants a per-project money view: capture invoices, snap photos of
+receipts, and log payments to subs/labor, with a glanceable "how's this job
+going" health readout. This is the fuller shape of bid-to-actual
+reconciliation, so build the two together: a `project_actuals`-style table
+(row types invoice-out / material-receipt / labor-payment / other; amount,
+payee, date, `paid` flag, an OPTIONAL link to a `line_item` or division, an
+optional receipt photo, a note), rolled up on a project financial screen
+against the bid — contracted total, invoiced, collected, spent-by-division,
+and projected margin vs. the bid's promised margin (the margin-drift number is
+the one that changes how a job is run mid-stream). Tagging each actual to a
+division/line is what makes reconciliation and the price-book intelligence
+above fall out of the same data. Reuse notes: receipt photos ride the EXISTING
+R2 + IndexedDB media pipeline (offline capture → sync upload, identical to
+walkthrough photos); `contractor_id` on every row (Hard Rule 7). This is all
+INTERNAL — never customer-facing, so it sits cleanly outside Hard Rule 5,
+like transcripts/GPS. Scope honesty: §12 parks "invoicing/payments" as v1
+out-of-scope, so this is a deliberate expansion — sequence the COST side
+(receipts + sub payments → margin drift → price book) into Phase 3 first as the
+high-value / low-friction slice; treat customer INVOICING (money in, A/R,
+generating an invoice doc) as its own later phase so it doesn't drift toward
+accounting software.
+
 **Phase 4 — Productization (only after §Agreed-Next-Steps milestone: works great for one contractor)**
 Multi-tenant auth/RLS, onboarding, template marketplace defaults, billing at $100/month.
 
@@ -477,3 +500,52 @@ Resolved at Phase 0 kickoff (2026-07-11):
 
 Also decided at Phase 0 kickoff:
 7. **Auth: email magic link** with long-lived (90-day) device sessions — passwordless, offline-friendly once signed in, extends cleanly to multi-tenant. Pilot email delivery is `EMAIL_PROVIDER=console` (link prints to server log); a real provider slots in before Phase 3.
+
+## 15. Production Deployment (live 2026-07-21)
+
+**Live at `https://scopewalk.cleanconstructionllc.com`** — a single Render web
+service (`render.yaml` blueprint, Node runtime, Starter plan, Ohio region)
+serves the built PWA, `/api/*`, and public proposal links `/p/:token` from one
+origin (no CORS, session cookie works, PWA offline intact; Hono `serveStatic`
++ SPA fallback in `server/src/index.ts` — API misses stay JSON 404/401, never
+HTML). DNS: `scopewalk` CNAME → `scopewalk.onrender.com` at **Namecheap**
+(registrar-servers nameservers; the marketing site itself deploys via Vercel,
+but DNS lives at Namecheap — and note Bryon also owns `cleanconstruction.site`,
+an easy wrong-domain trap in the Namecheap dashboard). TLS auto-issued/renewed
+by Render. Nav link on cleanconstructionllc.com (repo
+`bryonskvor-pixel/cleanconstruction`, static HTML on Vercel) added on branch
+`add-scopewalk-nav-link`.
+
+Deployment decisions:
+- **DB_REMOTE_ONLY=true on Render**: the server talks to Turso directly over
+  HTTP (pure JS). The embedded replica stays local-dev only — on Render's
+  ephemeral disk it would re-hydrate every boot, and its native binding
+  SIGABRTs in that container. Nothing outside `server/src/db.ts` cares.
+- **Env hygiene**: `server/src/env.ts` loads .env then trims every
+  `process.env` value once at startup — a value pasted into a hosting
+  dashboard carries an invisible trailing newline (`%0A`) that breaks URL
+  parsing and HTTP headers with errors that point nowhere near the cause.
+  This burned a real deploy; keep the trim.
+- **Login email is real now**: `EMAIL_PROVIDER=resend` sends magic links from
+  `login@cleanconstructionllc.com` (domain already Resend-verified for the
+  marketing site's contact form; same API key, set in Render dashboard).
+  First sends land in Gmail spam — expected until domain reputation builds.
+- **Render env vars**: secrets (Turso/Resend/Groq/R2/Anthropic) live ONLY in
+  the Render dashboard (`sync: false` in the blueprint). `APP_ORIGIN` must
+  match the public domain — magic-link URLs are built from it.
+- **Accounts**: contractor rows exist for `bryonskvor@gmail.com` (has all
+  pilot data — Bryon runs the pilot under this) and
+  `cleanconstructionllc.19@gmail.com` (seeded by the blueprint, empty).
+  Decision: use Bryon's account for the pilot; when Brad takes over, change
+  that row's email so he inherits price book/settings/history. Tenants are
+  fully isolated — data never crosses between the two rows.
+
+**KNOWN GAP — proposal PDF generation does not work on Render.** The PDF path
+(`server/src/proposals.ts` → playwright-core) launches Playwright Chromium or
+falls back to system Edge/Chrome; none exist in Render's native Node
+environment, so PDF download returns the graceful 503. Everything else about
+proposals (public link, view tracking, signing, versioning) works — the Phase
+2 milestone (one real bid to one real customer) is NOT blocked. Fix options
+when we pick this up: install Chromium at build time (may hit missing system
+libs on native Render) or switch the service to Docker with the official
+Playwright image (reliable, bigger config change).

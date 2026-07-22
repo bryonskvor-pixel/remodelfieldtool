@@ -1,5 +1,55 @@
 # Session Notes — ScopeWalk (remodelfieldtool)
 
+## 2026-07-21 (session 8) — DEPLOYED: ScopeWalk live at scopewalk.cleanconstructionllc.com
+
+**Accomplished**
+- **Production deployment, end to end.** Live and verified:
+  `https://scopewalk.cleanconstructionllc.com` (200 shell, `/api/health` ok,
+  `/auth/verify` SPA fallback, PWA manifest, valid TLS through Oct 2026).
+  Full detail + decisions in PROJECT_CONTEXT.md **§15** (new section).
+- Single-origin serving: Hono serves `app/dist` + API + `/p/:token` from one
+  Render web service (`render.yaml` blueprint, Starter plan, Ohio).
+- Real login email: `EMAIL_PROVIDER=resend` sends magic links from
+  `login@cleanconstructionllc.com` (marketing site's verified Resend domain,
+  same key). First sends land in Gmail spam — mark "not spam".
+- Three deploy failures diagnosed and fixed in sequence:
+  1. `NODE_ENV=production` made npm skip devDeps → `--include=dev` (4255219)
+  2. libsql embedded replica SIGABRTs on Render → `DB_REMOTE_ONLY=true`
+     direct-HTTP Turso client in `server/src/db.ts` (8564e63)
+  3. Render env var pasted with invisible trailing newline (`%0A` in the
+     Turso URL) → `server/src/env.ts` trims all env values at startup
+     (1f900d2). Verified by reproducing the exact failure locally.
+- DNS: CNAME at **Namecheap** (not Vercel — and the record first went onto
+  Bryon's other domain `cleanconstruction.site` by mistake; watch for that).
+- Nav link for cleanconstructionllc.com staged on branch
+  `add-scopewalk-nav-link` in `bryonskvor-pixel/cleanconstruction` (GitHub).
+
+**State**
+- App is live; Bryon was doing the final user steps: verify `APP_ORIGIN` =
+  `https://scopewalk.cleanconstructionllc.com` in Render env, merge the nav
+  branch, mark the sign-in email not-spam, log in as `bryonskvor@gmail.com`.
+- Two contractor accounts exist (Bryon's has the data; Brad's seeded, empty).
+  Decision: pilot runs on Bryon's; re-email the row to Brad at handoff (§15).
+
+**Next steps**
+- **TODO (flagged by Bryon): proposal PDF generation on Render.** Chromium
+  doesn't exist there — PDF download 503s. Options in §15: build-time
+  Chromium install vs. Docker + official Playwright image. Everything else
+  (public link, sign, versions) works, so the real-bid milestone is NOT
+  blocked — but look at this soon.
+- Phase 2 milestone: one real bid sent to one real customer.
+- After milestone: consider dropping the second seeded contractor from
+  `render.yaml` (left in place for now — harmless, dedupes on email).
+
+**Context**
+- Secrets live in Render dashboard + local `.env` only. `RESEND_API_KEY` is
+  NOT in the local `.env` — it lives in the marketing site's Vercel env and
+  the Render dashboard.
+- Local dev unchanged: embedded replica, `EMAIL_PROVIDER=console`, Vite proxy.
+- `nslookup` from Bryon's LAN may lag on DNS changes (router negative-cache);
+  query `dns1.registrar-servers.com` or `8.8.8.8` directly, or use
+  `curl --resolve` against the Render IP.
+
 ## 2026-07-11 (session 7) — Phase 2 slice 2: proposal builder — Phase 2 code complete
 
 **Accomplished**

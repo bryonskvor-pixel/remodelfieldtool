@@ -100,6 +100,13 @@ latest sent version. Proposals sync offline like everything else (migration
 0005, IndexedDB v3) EXCEPT viewed_at/signed_at/signature_data/pdf_r2_key
 (server-authoritative, not client-writable; signed rows immutable via sync).
 Verified in an automated browser run (34 checks) + Turso row inspection.
+**DEPLOYED (2026-07-21): live at `https://scopewalk.cleanconstructionllc.com`**
+— single Render web service serves PWA + API + `/p/:token` from one origin;
+`DB_REMOTE_ONLY=true` (direct-HTTP Turso, embedded replica is local-dev only);
+magic-link login emails via Resend; env values trimmed at startup
+(`server/src/env.ts`). Full deployment decisions in PROJECT_CONTEXT.md §15.
+**KNOWN GAP: proposal PDF 503s on Render (no Chromium there) — needs
+build-time Chromium or Docker+Playwright image. Flagged to revisit.**
 **Remaining for the Phase 2 milestone: one real bid sent to one real
 customer.**
 
